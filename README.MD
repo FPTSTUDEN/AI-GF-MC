@@ -2,8 +2,10 @@
 minecraft python script extracts game data -> local llm (maybe -> tts in the future)
 BOOM
 # Inspiration
-[![aigf](https://github.com/FPTSTUDEN/AI-GF-MC/blob/78e6beb2dfb16c07e8d1db7fc97faa9ffa485453/misc/ai_catsdontlikecoffee.png){width=200px}](https://www.instagram.com/catsdontlikecoffee/)
+<!-- [![aigf](https://github.com/FPTSTUDEN/AI-GF-MC/blob/78e6beb2dfb16c07e8d1db7fc97faa9ffa485453/misc/ai_catsdontlikecoffee.png){:width=200px}](https://www.instagram.com/catsdontlikecoffee/) -->
+<img src="misc\ai_catsdontlikecoffee.png" alt="catsdontlikecofee" width="150"/>
 this guy's videos are insane and i like it
+
 # Stable files
 - elog.py - event logger to /.minecraft/event_log.txt
 
