@@ -1,19 +1,20 @@
 minecraft python script extracts game data -> local llm (maybe -> tts in the future)
 BOOM
 
-stable versions:
-elog.py - event logger to /.minecraft/event_log.txt
+# Stable files
+- elog.py - event logger to /.minecraft/event_log.txt
 
-#TODO:
-- Logging:
+# TODO
+## Logging
 - Surrounding: block, biome... 
 - Player action: mining, farming,...
 - Inventory: collective, should be new items only
 
-- Log parser -> comment on:
+## Log parser -> comment
 - Danger situation (cheer up/feel pity...)
 - above logs...
 
-- Memory: death count (+ reason for death)
+## Memory
+- death count (+ reason for death)
 
 -Formatting this file lol
