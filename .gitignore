@@ -1,0 +1,8 @@
+# Ignore PowerShell script for synchronization
+sync.ps1
+
+# Ignore symbolic link files
+*.symlink
+
+# Ignore Visual Studio Code settings
+.vscode/settings.json
