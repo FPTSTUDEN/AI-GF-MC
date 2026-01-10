@@ -1,6 +1,7 @@
 from minescript import *
 import time
 import math
+import threading
 # import minescript.biotrack as biotrack
 
 # from minescript.system.lib.minescript import chat # no need 
@@ -43,35 +44,16 @@ def direction_vector(from_pos, to_pos):
 
 def format_position(pos):
     return f"({pos[0]:.1f}, {pos[1]:.1f}, {pos[2]:.1f})"
-# ------------------ biome ------------------
-# BIOMES = [
-#     "the_void", "plains", "sunflower_plains", "snowy_plains", "ice_spikes",
-#     "desert", "swamp", "mangrove_swamp", "forest", "flower_forest",
-#     "birch_forest", "dark_forest", "old_growth_birch_forest", "old_growth_pine_taiga",
-#     "old_growth_spruce_taiga", "taiga", "snowy_taiga", "savanna", "savanna_plateau",
-#     "windswept_hills", "windswept_gravelly_hills", "windswept_forest",
-#     "windswept_savanna", "jungle", "sparse_jungle", "bamboo_jungle",
-#     "badlands", "eroded_badlands", "wooded_badlands", "meadow", "cherry_grove",
-#     "grove", "snowy_slopes", "frozen_peaks", "jagged_peaks", "stony_peaks",
-#     "river", "frozen_river", "beach", "snowy_beach", "stony_shore",
-#     "warm_ocean", "lukewarm_ocean", "deep_lukewarm_ocean", "ocean", "deep_ocean",
-#     "cold_ocean", "deep_cold_ocean", "frozen_ocean", "deep_frozen_ocean",
-#     "mushroom_fields", "dripstone_caves", "lush_caves", "deep_dark"
-# ]
-# x, y, z = map(int, player_position())
-# SCORE_OBJ = "visited_biomes"
-# TEMP_COUNTER = "biome_counter"
-# player = player_name()
-# birec.init_scoreboard()
-# birec.periodic_check()
+
 # ------------------ state ------------------
 
 last_pos = None
 last_health = None
+global seen_entity_ids
 seen_entity_ids = set()
 
 # ------------------ main ------------------
-'''
+'''SAMPLES
 Sample EntityData():
 {
     'id': 12345,
@@ -82,69 +64,108 @@ Sample EntityData():
     'yaw': 0.0,
     'pitch': 0.0
 }
+Sample DamageEvent(
+    type='damage',
+    time='',
+    entity_uuid='', # damaged target
+    cause_uuid='', #(e.g. skeleton shot -> skeleton_uuid, None)
+    source='' # (player, skeleton shot -> arrow)
+)
+Sample player(): uuid, health, name, id
 '''
+player = get_player()
+last_pos = player.position  # tuple (x, y, z)
+last_health = player.health # float
+last_seen_dangers=[]
+# eq=EventQueue()
+# eq.register_damage_listener()
+# eq.register_chat_listener()
+# global damage_event
+# event = eq.get()
+# echo("Event listeners registered")
+
+log("Event logger started!")
 def main():
-    global last_pos, last_health
+    global last_pos, last_health, last_seen_dangers, player
+    global damage_event
+    player = get_player()  
 
-    player = get_player()
-    last_pos = player.position  # tuple (x, y, z)
-    last_health = player.health # float
-    last_seen_dangers=[]
+    # ---- damage detection ----
 
-    log("Event logger started")
-
-    while True:
-        player = get_player()
-
-        # ---- footsteps (movement) ----
-        # if distance(player.position, last_pos) > 2.5:
-        #     log(f"Player ran {direction_vector(last_pos, player.position)[3]}to {format_position(player.position)}")
-        # elif distance(player.position, last_pos) > 1.3:
-        #     log(f"Player moved {direction_vector(last_pos, player.position)[3]}to {format_position(player.position)}")
-        # elif distance(player.position, last_pos) > 0.2:
-        #     log(f"Player is shifting {direction_vector(last_pos, player.position)[3]}to {format_position(player.position)}")
+    try: 
+        if damage_event.entity_uuid==player.uuid:
+            damage = last_health - player.health
+            source=damage_event.source
+            log(f"Player took damage ({damage:.1f} HP) by {source} current health {player.health:.1f}")
+        elif damage_event.cause_uuid==player.uuid:
+            for entity in get_entities():
+                if entity.uuid==damage_event.entity_uuid:
+                    victim=entity
+                    break
+            log(f"#{victim.id} {victim.name} took damage by player current health {victim.health}")
+    except:
+        log("Warning: No damage listener yet")
         
 
-        # ---- damage detection ----
-        if player.health < last_health:
-            damage = last_health - player.health
-            log(f"Player took damage ({damage:.1f} HP)")
+    # ---- low health warning ----
+    if player.health <= 5.0 and last_health > 5.0:
+        log(f"Warning: Player health is {player.health:.1f} HP!")
 
-        # ---- low health warning ----
-        if player.health <= 5.0 and last_health > 5.0:
-            log(f"Warning: Player health is {player.health:.1f} HP!")
 
-        # ---- nearby hostile mobs ----
-        # for e in entities(): echo(e['name'])
-        for e in get_entities():
-            if e.id not in seen_entity_ids:
-                    for monster in ["creeper","zombie","skeleton","spider","enderman","witch","drowned","husk","stray","phantom","pillager","ravager","evoker","vindicator"]:
-                        if monster in e.type and distance(player.position, e.position) < 5:
-                            log(f"Hostile mob nearby: {e.name} at {format_position(e.position)}")
-                            seen_entity_ids.add(e.id)
-            else:
-                if e.id in [a.id for a in last_seen_dangers]:
-                    last_danger=last_seen_dangers[[a.id for a in last_seen_dangers].index(e.id)]
-                    proxity_before = distance(last_pos, last_danger.position)
-                    proxity_now = distance(player.position, e.position)
-                    if proxity_now>5:
-                        last_seen_dangers.remove(last_seen_dangers[[a.id for a in last_seen_dangers].index(e.id)])
-                        continue
-                    if int(proxity_now*10) < int(proxity_before*10):
-                        log(f"Careful! The #{e.id} {e.name} is getting closer!")
-                    elif int(proxity_now*10) > int(proxity_before*10):
-                        log(f"Luckily, the #{e.id} {e.name} is moving away.")
+    last_pos = player.position
+    last_health = player.health
+def periodic_danger_check():
+    # ---- nearby hostile mobs ----
+    # for e in entities(): echo(e['name'])
+    player=get_player()
+    for e in get_entities():
+        if e.id not in seen_entity_ids:
+                for monster in ["creeper","zombie","skeleton","spider","enderman","witch","drowned","husk","stray","phantom","pillager","ravager","evoker","vindicator"]:
+                    if monster in e.type and distance(player.position, e.position) < 5:
+                        log(f"Hostile mob nearby: {e.name} at {format_position(e.position)}")
+                        seen_entity_ids.add(e.id)
+        else:
+            if e.id in [a.id for a in last_seen_dangers]:
+                last_danger=last_seen_dangers[[a.id for a in last_seen_dangers].index(e.id)]
+                proxity_before = distance(last_pos, last_danger.position)
+                proxity_now = distance(player.position, e.position)
+                if proxity_now>15: #view
                     last_seen_dangers.remove(last_seen_dangers[[a.id for a in last_seen_dangers].index(e.id)])
-                last_seen_dangers.append(e) if len(last_seen_dangers)<5 else last_seen_dangers.append(e) and last_seen_dangers.pop(0)
-                # debug: print last_seen_dangers name, id and position
-                # debug_msg="DEBUG: "
-                # for d in last_seen_dangers:
-                #     debug_msg += f"{d.name} (ID: {d.id}) at {format_position(d.position)}, "
-                # if debug_msg:
-                #     chat(debug_msg)
-        last_pos = player.position
-        last_health = player.health
+                    continue
+                # if abs(proxity_now-proxity_before)>1.5:
+                if proxity_now < proxity_before:
+                    log(f"Incoming #{e.id} {e.name}!")
+                elif proxity_now > proxity_before:
+                    log(f"Distancing from #{e.id} {e.name}...")
+                last_seen_dangers.remove(last_seen_dangers[[a.id for a in last_seen_dangers].index(e.id)])
+            last_seen_dangers.append(e) if len(last_seen_dangers)<5 else last_seen_dangers.append(e) and last_seen_dangers.pop(0)
+    threading.Timer(2, periodic_danger_check).start()
 
-        time.sleep(0.5)
 
-main()
+def damage_check():
+    main()
+
+
+with EventQueue() as eq:
+    eq.register_damage_listener()
+    eq.register_chat_listener()
+    # event = eq.get()
+    echo("Event listeners registered...")
+    echo("Please wait... Running checks...")
+
+    damage_check()
+    periodic_danger_check()
+    echo("Checks ran successfully")
+    while True:
+        event = eq.get()
+        if event.type == EventType.DAMAGE:
+            damage_event=event
+            damage_check()
+        # if event.type == EventType.CHAT:
+        #     msg = event.message
+        #     if msg =="Damage event detected":
+        #         echo(msg+" from chat")
+
+
+
+

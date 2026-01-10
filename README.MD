@@ -18,25 +18,29 @@ also the videos are insane and i like it
 their repo helped me a lot with:
 - latest version's syntax
 - biolog (a modified version of their biomerecorder)
+
 <a href="https://github.com/sam-ple">Check them out</a>
 
 # Stable files
-- remote_minescript/elog.py - event logger to /.minecraft/event_log.txt
+- **remote_minescript/elog.py** - event logger to /.minecraft/event_log.txt
+- **remote_minescript/biolog.py** - biome & time on biome logger 
 
 # Prerequisites
-- Minecraft with Minescript mod
-- Ollama: mistral:7b-instruct
-- Any mod with chat hiding functionality (to not expose your spammy logging chat)
+- **Minecraft** with **Minescript** mod
+- **Ollama**: mistral:7b-instruct
+- Any mod with **chat hiding** functionality (to not expose your spammy logging chat)
 
 # TODO
 ## Logging
 (...: in progress, V: Done, X: Failed attempt)
-- death
-- low_health  ...  
-- mob_near V
+- **damaged** (cause: lava,monster...) V
+- **attacked entity** V
+- death ... (0 HP detection possible)
+- **low_health**  V
+- **monster_near** V
 - achievement
-- enter_dimension (X) / biome V
-- lava_near
+- enter_dimension (X) / **biome** V
+- ~~lava_near~~ (no need)
 
 - Player action (long duration): mining, farming,...
 - Inventory: collective, should be new items only
