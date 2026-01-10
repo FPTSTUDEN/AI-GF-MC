@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: © 2022-2025 Greg Christiana <maxuser@minescript.net>
+# SPDX-FileCopyrightText: © 2022-2024 Greg Christiana <maxuser@minescript.net>
 # SPDX-License-Identifier: GPL-3.0-only
 
 # WARNING: This file is generated from the Minescript jar file. This file will
@@ -6,7 +6,7 @@
 # make edits to this file, make sure to save a backup copy when upgrading to a
 # new version of Minescript.
 
-"""minescript_runtime v5.0 distributed via Minescript jar file
+"""minescript_runtime v4.0 distributed via Minescript jar file
 
 Usage: import minescript_runtime  # from Python script
 
@@ -282,13 +282,45 @@ def await_script_function(
   return future_value.wait()
 
 
+@dataclass
+class BasicTask:
+  fcallid: int
+  func_name: str
+  immediate_args: Tuple[Any, ...]
+  deferred_args: Tuple[Any, ...]
+  result_transform: Callable[[Any], Any] = _identity_fn
+
+  @staticmethod
+  def _get_next_fcallid():
+    return get_next_fcallid()
+
+  @staticmethod
+  def _get_immediate_args(args):
+    return [None if isinstance(arg, BasicTask) else arg for arg in args]
+
+  @staticmethod
+  def _get_deferred_args(args):
+    return [arg.fcallid if isinstance(arg, BasicTask) else None for arg in args]
+
+
 class BasicScriptFunction:
-  def __init__(self, name, args_func):
+  def __init__(self, name, args_func, conditional_task_arg=False):
     self.name = name
     self.args_func = args_func
     self.required_executor = None
     self.default_executor = None
+    self.conditional_task_arg = conditional_task_arg
     self.result_transform = _always_none_fn
+
+  def as_task(self, *args, **kwargs):
+    fcallid = get_next_fcallid()
+    if self.conditional_task_arg:
+      kwargs["_as_task"] = True
+    args_list = self.args_func(*args, **kwargs)
+    immediate_args = BasicTask._get_immediate_args(args_list)
+    deferred_args = BasicTask._get_deferred_args(args_list)
+    return BasicTask(
+        fcallid, self.name, immediate_args, deferred_args, self.result_transform)
 
   def set_default_executor(self, executor: FunctionExecutor):
     self.default_executor = executor
@@ -315,8 +347,8 @@ class ScriptFunction(BasicScriptFunction):
 
 
 class NoReturnScriptFunction(BasicScriptFunction):
-  def __init__(self, name, args_func):
-    super().__init__(name, args_func)
+  def __init__(self, name, args_func, conditional_task_arg=False):
+    super().__init__(name, args_func, conditional_task_arg=conditional_task_arg)
 
   def __call__(self, *args, **kwargs):
     call_noreturn_function(
@@ -335,22 +367,9 @@ class JavaException(Exception):
   message: str
   desc: str
   stack: List[StackElement]
-  cause: "JavaException" = None
 
   def __str__(self):
-    s = self.desc
-    if self.cause is not None:
-      s += "\ncaused by:\n  " + str(self.cause)
-    return s
-
-def _jsonToJavaException(e: Dict[str, Any]) -> JavaException:
-  if e is None:
-    return None
-  else:
-    return JavaException(
-        e["type"], e["message"], e["desc"],
-        [StackElement(s["file"], s["method"], s["line"]) for s in e["stack"]],
-        _jsonToJavaException(e.get("cause")))
+    return self.desc
 
 
 def _ScriptServiceLoopImpl():
@@ -358,8 +377,8 @@ def _ScriptServiceLoopImpl():
     try:
       json_input = stdin_readline()
       if not json_input:
-        debug_log("minescript_runtime.py: stdin reached EOF, terminating script with os._exit()")
-        os._exit(1)
+        debug_log("minescript_runtime.py: stdin reached EOF, exiting script service loop")
+        break
       reply = json.loads(json_input)
       if _is_debug:
         debug_log("Parsed json reply:", reply)
@@ -400,7 +419,9 @@ def _ScriptServiceLoopImpl():
 
     if "except" in reply:
       e = reply["except"]
-      exception = _jsonToJavaException(e)
+      exception = JavaException(
+          e["type"], e["message"], e["desc"],
+          [StackElement(s["file"], s["method"], s["line"]) for s in e["stack"]])
       if exception_handler is None:
         exception_message = f"JavaException raised in `{func_name}`: {exception}"
         debug_log("minescript_runtime.py:", exception_message)
@@ -592,7 +613,7 @@ def CheckVersionCompatibility(
           if debug:
             version_str = VersionAsString(actual_version)
             print(
-                f'(debug) module version previously computed: {name} {version_str}',
+                f'(debug) module verison previously computed: {name} {version_str}',
                 file=sys.stderr)
 
         if not actual_version:

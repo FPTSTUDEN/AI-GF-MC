@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: © 2022-2025 Greg Christiana <maxuser@minescript.net>
+# SPDX-FileCopyrightText: © 2022-2024 Greg Christiana <maxuser@minescript.net>
 # SPDX-License-Identifier: GPL-3.0-only
 
 # WARNING: This file is generated from the Minescript jar file. This file will
@@ -6,15 +6,13 @@
 # make edits to this file, make sure to save a backup copy when upgrading to a
 # new version of Minescript.
 
-"""minescript v5.0 distributed via Minescript jar file
+"""minescript v4.0 distributed via Minescript jar file
 
 Usage: import minescript  # from Python script
 
-This module contains APIs for scripts to call into the Minescript mod. It should be imported by
-scripts as a library and not run directly.
-
-APIs in this module are compatible with both Python and Pyjinn scripts unless `"Compatibility:"`
-is specified.
+User-friendly API for scripts to make function calls into the
+Minescript mod.  This module should be imported by other
+scripts and not run directly.
 """
 
 import base64
@@ -43,16 +41,12 @@ Vector3f = Tuple[float, float, float]
 
 @dataclass
 class MinescriptRuntimeOptions:
-  """Minscript module options.
-  
-  Compatibility: Python only.
-  """
   legacy_dict_return_values: bool = False  # set to `True` to emulate behavior before v4.0
 
 options = MinescriptRuntimeOptions()
 
 
-def execute(command: str):
+def execute(command: str, _as_task=False):
   """Executes the given command.
 
   If `command` is prefixed by a backslash, it's treated as Minescript command,
@@ -63,14 +57,14 @@ def execute(command: str):
 
   Since: v2.1
   """
-  if not isinstance(command, str):
+  if not _as_task and not isinstance(command, str):
     raise TypeError("Argument must be a string.")
   return (command,)
 
-execute = NoReturnScriptFunction("execute", execute)
+execute = NoReturnScriptFunction("execute", execute, conditional_task_arg=True)
 
 
-def echo(*messages):
+def echo(*messages, _as_task=False):
   """Echoes plain-text messages to the chat.
 
   Echoed messages are visible only to the local player.
@@ -82,9 +76,12 @@ def echo(*messages):
 
   Since: v2.0
   """
-  return (" ".join([str(m) for m in messages]),)
+  if _as_task:
+    return messages
+  else:
+    return (" ".join([str(m) for m in messages]),)
 
-echo = NoReturnScriptFunction("echo", echo)
+echo = NoReturnScriptFunction("echo", echo, conditional_task_arg=True)
 
 
 def echo_json(json_text):
@@ -105,7 +102,7 @@ def echo_json(json_text):
 echo_json = NoReturnScriptFunction("echo_json", echo_json)
 
 
-def chat(*messages):
+def chat(*messages, _as_task=False):
   """Sends messages to the chat.
 
   If `messages[0]` is a str starting with a slash or backslash, automatically
@@ -118,12 +115,15 @@ def chat(*messages):
 
   Since: v2.0
   """
-  return (" ".join([str(m) for m in messages]),)
+  if _as_task:
+    return messages
+  else:
+    return (" ".join([str(m) for m in messages]),)
 
-chat = NoReturnScriptFunction("chat", chat)
+chat = NoReturnScriptFunction("chat", chat, conditional_task_arg=True)
 
 
-def log(*messages):
+def log(*messages, _as_task=False):
   """Sends messages to latest.log.
 
   Update in v4.0:
@@ -131,12 +131,15 @@ def log(*messages):
 
   Since: v3.0
   """
-  return (" ".join([str(m) for m in messages]),)
+  if _as_task:
+    return messages
+  else:
+    return (" ".join([str(m) for m in messages]),)
 
-log = NoReturnScriptFunction("log", log)
+log = NoReturnScriptFunction("log", log, conditional_task_arg=True)
 
 
-def screenshot(filename: str=None):
+def screenshot(filename=None):
   """Takes a screenshot, similar to pressing the F2 key.
 
   Args:
@@ -156,14 +159,13 @@ class JobInfo:
   command: List[str]
   source: str
   status: str
-  parent_job_id: Union[int, None]
-  self: bool
+  self: bool = False
 
 def job_info() -> List[JobInfo]:
   """Return info about active Minescript jobs.
 
   Returns:
-    `JobInfo`.  For the enclosing job, `JobInfo.self` is `True`.
+    `JobInfo`.  For the  enclosing job, `JobInfo.self` is `True`.
 
   Since: v4.0
   """
@@ -178,8 +180,6 @@ job_info = ScriptFunction("job_info", job_info, _job_info_result_transform)
 
 def flush():
   """Wait for all previously issued script commands from this job to complete.
-
-  Compatibility: Python only.
 
   Since: v2.1
   """
@@ -205,7 +205,7 @@ def player_position() -> List[float]:
     player's position as [x: float, y: float, z: float]
 
   Update in v4.0:
-    Removed `done_callback` arg. Use `player_position().as_async()` for async execution.
+    Removed `done_callback` arg. Use `async_player_position()` for async execution.
   """
   return ()
 
@@ -234,7 +234,7 @@ def player_hand_items() -> HandItems:
 
   Update in v4.0:
     Return `HandItems` instead of `List[Dict[str, Any]]` by default.
-    Removed `done_callback` arg. Use `player_hand_items.as_async()` for async execution.
+    Removed `done_callback` arg. Use `async_player_hand_items()` for async execution.
 
   Since: v2.0
   """
@@ -244,7 +244,10 @@ def _player_hand_items_result_transform(items):
   """(__internal__)"""
   if options.legacy_dict_return_values:
     return items
-  return HandItems(**items)
+  main, off = items
+  return HandItems(
+      main_hand=None if main is None else ItemStack(**main),
+      off_hand=None if off is None else ItemStack(**off))
 
 player_hand_items = ScriptFunction(
     "player_hand_items", player_hand_items, _player_hand_items_result_transform)
@@ -259,7 +262,7 @@ def player_inventory() -> List[ItemStack]:
 
   Update in v4.0:
     Return `List[ItemStack]` instead of `List[Dict[str, Any]]` by default.
-    Removed `done_callback` arg. Use `player_inventory.as_async()` for async execution.
+    Removed `done_callback` arg. Use `async_player_inventory()` for async execution.
 
   Update in v3.0:
     Introduced `"slot"` and `"selected"` attributes in the returned
@@ -294,7 +297,7 @@ def player_inventory_slot_to_hotbar(slot: int) -> int:
     No longer supported because ServerboundPickItemPacket was removed in Minecraft 1.21.4.
 
   Update in v4.0:
-    Removed `done_callback` arg. Use `player_inventory_slot_to_hotbar.as_async(...)`
+    Removed `done_callback` arg. Use `async_player_inventory_slot_to_hotbar(...)
     for async execution.
   
   Since: v3.0
@@ -315,7 +318,7 @@ def player_inventory_select_slot(slot: int) -> int:
     previously selected hotbar slot
 
   Update in v4.0:
-    Removed `done_callback` arg. Use `player_inventory_select_slot.as_async(...)` for async execution.
+    Removed `done_callback` arg. Use `async_player_inventory_select_slot(...)` for async execution.
 
   Since: v3.0
   """
@@ -504,11 +507,11 @@ def player_press_drop(pressed: bool):
 player_press_drop = ScriptFunction("player_press_drop", player_press_drop)
 
 
-def player_orientation() -> List[float]:
+def player_orientation():
   """Gets the local player's orientation.
 
   Returns:
-    [yaw: float, pitch: float] as angles in degrees
+    (yaw: float, pitch: float) as angles in degrees
 
   Since: v2.1
   """
@@ -517,7 +520,7 @@ def player_orientation() -> List[float]:
 player_orientation = ScriptFunction("player_orientation", player_orientation)
 
 
-def player_set_orientation(yaw: float, pitch: float) -> bool:
+def player_set_orientation(yaw: float, pitch: float):
   """Sets the local player's orientation.
 
   Args:
@@ -554,7 +557,7 @@ class TargetedBlock:
     else:
       raise ValueError("Expected integer from 0 to 3 but got " + repr(i))
 
-def player_get_targeted_block(max_distance: float = 20) -> Union[TargetedBlock, None]:
+def player_get_targeted_block(max_distance: float = 20):
   """Gets info about the nearest block, if any, in the local player's crosshairs.
 
   Args:
@@ -571,7 +574,7 @@ def player_get_targeted_block(max_distance: float = 20) -> Union[TargetedBlock, 
   return (max_distance,)
 
 def _player_get_targeted_block_result_transform(targeted_block):
-  return None if targeted_block is None else TargetedBlock(**targeted_block)
+  return None if targeted_block is None else TargetedBlock(*targeted_block)
 
 player_get_targeted_block = ScriptFunction(
     "player_get_targeted_block", player_get_targeted_block,
@@ -592,10 +595,10 @@ class EntityData:
   health: float = None
   local: bool = None  # `True` if this the local player
   passengers: List[str] = None  # UUIDs of passengers as strings
-  nbt: str = None
+  nbt: Dict[str, Any] = None
 
 
-def player_get_targeted_entity(max_distance: float = 20, nbt: bool = False) -> Union[EntityData, None]:
+def player_get_targeted_entity(max_distance: float = 20, nbt: bool = False) -> EntityData:
   """Gets the entity targeted in the local player's crosshairs, if any.
 
   Args:
@@ -630,7 +633,7 @@ def player_health() -> float:
 player_health = ScriptFunction("player_health", player_health)
 
 
-def player(*, nbt: bool = False) -> EntityData:
+def player(*, nbt: bool = False):
   """Gets attributes for the local player.
 
   Args:
@@ -656,7 +659,7 @@ get_player = player  # Alias for scripts with `player` variables.
 def players(
     *, nbt: bool = False, uuid: str = None, name: str = None,
     position: Vector3f = None, offset: Vector3f = None, min_distance: float = None,
-    max_distance: float = None, sort: str = None, limit: int = None) -> List[EntityData]:
+    max_distance: float = None, sort: str = None, limit: int = None):
   """Gets a list of nearby players and their attributes.
 
   Args:
@@ -700,7 +703,7 @@ get_players = players  # Alias for scripts with `players` variables.
 def entities(
     *, nbt: bool = False, uuid: str = None, name: str = None, type: str = None,
     position: Vector3f = None, offset: Vector3f = None, min_distance: float = None,
-    max_distance: float = None, sort: str = None, limit: int = None) -> List[EntityData]:
+    max_distance: float = None, sort: str = None, limit: int = None):
   """Gets a list of nearby entities and their attributes.
 
   Args:
@@ -752,7 +755,6 @@ class VersionInfo:
   os_name: str
   os_version: str
   minecraft_class_name: str
-  pyjinn: str
 
 def version_info() -> VersionInfo:
   """Gets version info for Minecraft, Minescript, mod loader, launcher, and OS.
@@ -818,20 +820,10 @@ def getblock(x: int, y: int, z: int) -> str:
 
   Returns:
     block type at (x, y, z) as a string
-
-  Update in v5.0:
-    Added alias `get_block(...)`.
   """
   return (x, y, z)
 
 getblock = ScriptFunction("getblock", getblock)
-
-get_block = getblock
-"""Alias for `getblock(...)`.
-
-Since: v5.0
-"""
-
 
 
 def getblocklist(positions: List[List[int]]) -> List[str]:
@@ -843,92 +835,14 @@ def getblocklist(positions: List[List[int]]) -> List[str]:
   Returns:
     block types at given positions as list of strings
 
-  Update in v5.0:
-    Added alias `get_block_list(...)`.
-
   Update in v4.0:
-    Removed `done_callback` arg. Use `getblocklist.as_async(...)` for async execution.
+    Removed `done_callback` arg. Use `async_getblocklist(...)` for async execution.
 
   Since: v2.1
   """
   return (positions,)
 
 getblocklist = ScriptFunction("getblocklist", getblocklist)
-
-get_block_list = getblocklist
-"""Alias for `getblocklist(...)`.
-
-Since: v5.0
-"""
-
-
-class BlockRegion:
-  """Accessor for blocks within an axis-aligned bounding box.
-
-  See `get_block_region(...)` for creating a `BlockRegion`.
-
-  Since: v5.0
-  """
-  
-  def __init__(self, min_pos: BlockPos, max_pos: BlockPos, blocks: Tuple[str, ...]):
-    """Creates a block region between `min_pos` and `max_pos`, inclusive.
-    
-    Args:
-      min_pos: minimum position of axis-aligned bounding box
-      max_pos: maximum position of axis-aligned bounding box
-      blocks: tuple of block type strings covering the volume of blocks between `min_pos` and
-          `max_pos`, inclusive; given Lx, Ly, Lz lengths of the bounding box in x, y, and z
-          dimensions, the first value in the tuple represents the block at the min_pos;
-          the first Lx values represent the min y, z edge of the volume; the first Lx * Lz
-          values represent the blocks in the min y plane of the volume; the last value represents
-          the block at max_pos.
-    """
-    self.min_pos = min_pos
-    self.max_pos = max_pos
-    self.x_length = max_pos[0] - min_pos[0] + 1
-    self.y_length = max_pos[1] - min_pos[1] + 1
-    self.z_length = max_pos[2] - min_pos[2] + 1
-    self.blocks = blocks
-
-  def get_block(self, x: int, y: int, z: int) -> str:
-    """Gets the type of block at position (x, y, z)."""
-    return self.blocks[self.get_index(x, y, z)]
-
-  def get_index(self, x: int, y: int, z: int) -> int:
-    """Gets the index into `blocks` sequence for position (x, y, z)."""
-
-    x_index = x - self.min_pos[0]
-    y_index = y - self.min_pos[1]
-    z_index = z - self.min_pos[2]
-
-    if not (0 <= x_index < self.x_length and
-            0 <= y_index < self.y_length and
-            0 <= z_index < self.z_length):
-      raise IndexError(
-          f"Block position {(x, y, z)} out of bounds for BlockRegion covering {self.min_pos} to {self.max_pos}")
-
-    return x_index + z_index * self.x_length + y_index * self.x_length * self.z_length
-
-
-def get_block_region(pos1: BlockPos, pos2: BlockPos, safety_limit: bool = True) -> BlockRegion:
-  """Gets the types of blocks in the axis-aligned bounding box between pos1 and pos2, inclusive.
-
-  Args:
-    pos1, pos2: opposing corners of an axis-aligned bounding box (aabb)
-    safety_limit: if `True`, fail if requested volume spans more than 1600 chunks
-
-  Returns:
-    `BlockRegion` covering the requested volume of blocks.
-
-  Since: v5.0
-  """
-  return (pos1, pos2, safety_limit)
-
-def _get_block_region_result_transform(block_region):
-  return BlockRegion(**block_region)
-
-get_block_region = ScriptFunction(
-    "get_block_region", get_block_region, _get_block_region_result_transform)
 
 
 def await_loaded_region(x1: int, z1: int, x2: int, z2: int):
@@ -938,8 +852,6 @@ def await_loaded_region(x1: int, z1: int, x2: int, z2: int):
     x1, z1, x2, z2: bounds of the region for awaiting loaded chunks
     timeout: if specified, timeout in seconds to wait for the region to load
 
-  Compatibility: Python only.
-
   Update in v4.0:
     Removed `done_callback` arg. Call now always blocks until region is loaded.
   """
@@ -948,7 +860,7 @@ def await_loaded_region(x1: int, z1: int, x2: int, z2: int):
 await_loaded_region = ScriptFunction("await_loaded_region", await_loaded_region)
 
 
-def _register_key_listener(
+def register_key_listener(
     handler: Callable[[Dict[str, Any]], None], exception_handler: ExceptionHandler = None) -> int:
   """Registers a handler for receiving keyboard events.
 
@@ -966,13 +878,13 @@ def _register_key_listener(
 
   Since: v3.2
   """
-  listener_id = await_script_function("register_event_listener", ("key", {}))
+  handler_id = await_script_function("register_key_listener", ())
   send_script_function_request(
-      "start_event_listener", ("key", listener_id), handler, exception_handler)
-  return listener_id
+      "start_key_listener", (handler_id,), handler, exception_handler)
+  return handler_id
 
 
-def _register_mouse_listener(
+def register_mouse_listener(
     handler: Callable[[Dict[str, Any]], None], exception_handler: ExceptionHandler = None) -> int:
   """Registers a handler for receiving mouse events.
 
@@ -987,13 +899,13 @@ def _register_mouse_listener(
 
   Since: v4.0
   """
-  listener_id = await_script_function("register_event_listener", ("mouse", {}))
+  handler_id = await_script_function("register_mouse_listener", ())
   send_script_function_request(
-      "start_event_listener", ("mouse", listener_id), handler, exception_handler)
-  return listener_id
+      "start_mouse_listener", (handler_id,), handler, exception_handler)
+  return handler_id
 
 
-def _register_chat_message_listener(
+def register_chat_message_listener(
     handler: Callable[[Dict[str, Any]], None], exception_handler: ExceptionHandler = None) -> int:
   """Registers a handler to listen for chat messages.
 
@@ -1016,13 +928,13 @@ def _register_chat_message_listener(
   See also:
     `register_chat_message_interceptor()` for swallowing outgoing chat messages
   """
-  listener_id = await_script_function("register_event_listener", ("chat", {}))
+  handler_id = await_script_function("register_chat_message_listener", ())
   send_script_function_request(
-      "start_event_listener", ("chat", listener_id), handler, exception_handler)
-  return listener_id
+      "start_chat_message_listener", (handler_id,), handler, exception_handler)
+  return handler_id
 
 
-def _register_chat_message_interceptor(
+def register_chat_message_interceptor(
     handler: Callable[[Dict[str, Any]], None], exception_handler: ExceptionHandler = None,
     *, prefix: str = None, pattern: str = None) -> int:
   """Registers a handler for swallowing outgoing chat messages matching a prefix or pattern.
@@ -1047,20 +959,15 @@ def _register_chat_message_interceptor(
   See also:
     `register_chat_message_listener()` for non-destructive listening of chat messages
   """
-  kwargs = {}
-  if prefix is not None:
-      kwargs["prefix"] = prefix
-  if pattern is not None:
-      kwargs["pattern"] = pattern
-  listener_id = await_script_function("register_event_listener", ("outgoing_chat_intercept", kwargs))
+  handler_id = await_script_function("register_chat_message_interceptor", (prefix, pattern))
 
   send_script_function_request(
-      "start_event_listener", ("outgoing_chat_intercept", listener_id), handler, exception_handler)
+      "start_chat_message_interceptor", (handler_id,), handler, exception_handler)
 
-  return listener_id
+  return handler_id
 
 
-def _register_add_entity_listener(
+def register_add_entity_listener(
     handler: Callable[[Dict[str, Any]], None], exception_handler: ExceptionHandler = None) -> int:
   """Registers a handler to listen for entities being added.
 
@@ -1072,13 +979,13 @@ def _register_add_entity_listener(
 
   Since: v4.0
   """
-  listener_id = await_script_function("register_event_listener", ("add_entity", {}))
+  handler_id = await_script_function("register_add_entity_listener", ())
   send_script_function_request(
-      "start_event_listener", ("add_entity", listener_id), handler, exception_handler)
-  return listener_id
+      "start_add_entity_listener", (handler_id,), handler, exception_handler)
+  return handler_id
 
 
-def _register_block_update_listener(
+def register_block_update_listener(
     handler: Callable[[Dict[str, Any]], None], exception_handler: ExceptionHandler = None) -> int:
   """Registers a handler to listen for block update events.
 
@@ -1090,13 +997,13 @@ def _register_block_update_listener(
 
   Since: v4.0
   """
-  listener_id = await_script_function("register_event_listener", ("block_update", {}))
+  handler_id = await_script_function("register_block_update_listener", ())
   send_script_function_request(
-      "start_event_listener", ("block_update", listener_id), handler, exception_handler)
-  return listener_id
+      "start_block_update_listener", (handler_id,), handler, exception_handler)
+  return handler_id
 
 
-def _register_take_item_listener(
+def register_take_item_listener(
     handler: Callable[[Dict[str, Any]], None], exception_handler: ExceptionHandler = None) -> int:
   """Registers a handler to listen for items being taken.
 
@@ -1108,13 +1015,13 @@ def _register_take_item_listener(
 
   Since: v4.0
   """
-  listener_id = await_script_function("register_event_listener", ("take_item", {}))
+  handler_id = await_script_function("register_take_item_listener", ())
   send_script_function_request(
-      "start_event_listener", ("take_item", listener_id), handler, exception_handler)
-  return listener_id
+      "start_take_item_listener", (handler_id,), handler, exception_handler)
+  return handler_id
 
 
-def _register_damage_listener(
+def register_damage_listener(
     handler: Callable[[Dict[str, Any]], None], exception_handler: ExceptionHandler = None) -> int:
   """Registers a handler to listen for damage events.
 
@@ -1126,13 +1033,13 @@ def _register_damage_listener(
 
   Since: v4.0
   """
-  listener_id = await_script_function("register_event_listener", ("damage", {}))
+  handler_id = await_script_function("register_damage_listener", ())
   send_script_function_request(
-      "start_event_listener", ("damage", listener_id), handler, exception_handler)
-  return listener_id
+      "start_damage_listener", (handler_id,), handler, exception_handler)
+  return handler_id
 
 
-def _register_explosion_listener(
+def register_explosion_listener(
     handler: Callable[[Dict[str, Any]], None], exception_handler: ExceptionHandler = None) -> int:
   """Registers a handler to listen for explosion events.
 
@@ -1144,13 +1051,13 @@ def _register_explosion_listener(
 
   Since: v4.0
   """
-  listener_id = await_script_function("register_event_listener", ("explosion", {}))
+  handler_id = await_script_function("register_explosion_listener", ())
   send_script_function_request(
-      "start_event_listener", ("explosion", listener_id), handler, exception_handler)
-  return listener_id
+      "start_explosion_listener", (handler_id,), handler, exception_handler)
+  return handler_id
 
 
-def _register_chunk_listener(
+def register_chunk_listener(
     handler: Callable[[Dict[str, Any]], None], exception_handler: ExceptionHandler = None) -> int:
   """Registers a handler to listen for chunk load/unload events.
 
@@ -1162,24 +1069,24 @@ def _register_chunk_listener(
 
   Since: v4.0
   """
-  listener_id = await_script_function("register_event_listener", ("chunk", {}))
+  handler_id = await_script_function("register_chunk_listener", ())
   send_script_function_request(
-      "start_event_listener", ("chunk", listener_id), handler, exception_handler)
-  return listener_id
+      "start_chunk_listener", (handler_id,), handler, exception_handler)
+  return handler_id
 
 
-def _unregister_event_handler(listener_id: int) -> bool:
+def unregister_event_handler(handler_id: int):
   """Unregisters an event handler, if any, for the currently running job. (__internal__)
 
   Args:
-    listener_id: ID of an event handler returned from a `register_...()` function.
+    handler_id: ID of an event handler returned from a `register_...()` function.
 
   Returns:
-    `True` if `listener_id` was successfully cancelled, `False` otherwise.
+    `True` if `handler_id` was successfully cancelled, `False` otherwise.
 
   Since: v4.0
   """
-  return await_script_function("unregister_event_handler", (listener_id,))
+  return await_script_function("unregister_event_handler", (handler_id,))
 
 
 def set_default_executor(executor: minescript_runtime.FunctionExecutor):
@@ -1190,11 +1097,145 @@ def set_default_executor(executor: minescript_runtime.FunctionExecutor):
   Args:
     executor: one of `minescript.tick_loop`, `minescript.render_loop`, or `minescript.script_loop`
 
-  Compatibility: Python only.
-
   Since: v4.0
   """
   minescript_runtime._default_executor = executor
+
+
+@dataclass
+class Task(minescript_runtime.BasicTask):
+  """Executable task that allows multiple operations to execute on the same executor cycle."""
+
+  @staticmethod
+  def as_list(*values):
+    """Creates a task that returns the given values as a list."""
+    return Task(
+        Task._get_next_fcallid(), "as_list",
+        Task._get_immediate_args(values), Task._get_deferred_args(values))
+
+  @staticmethod
+  def get_index(array, index):
+    """Creates a task that looks up an array by index."""
+    return Task(
+        Task._get_next_fcallid(), "get_index",
+        Task._get_immediate_args((array, index)), Task._get_deferred_args((array, index)))
+
+  @staticmethod
+  def get_attr(obj, attr):
+    """Creates a task that looks up a map/dict by key."""
+    return Task(
+        Task._get_next_fcallid(), "get_attr",
+        Task._get_immediate_args((obj, attr)), Task._get_deferred_args((obj, attr)))
+
+  @staticmethod
+  def contains(container, element):
+    """Creates a task that checks if a container (map, list, or string) contains an element."""
+    return Task(
+        Task._get_next_fcallid(), "contains",
+        Task._get_immediate_args((container, element)),
+        Task._get_deferred_args((container, element)))
+
+  @staticmethod
+  def as_int(*numbers):
+    """Creates a task that converts a floating-point number to int."""
+    return Task(
+        Task._get_next_fcallid(), "as_int",
+        Task._get_immediate_args(numbers), Task._get_deferred_args(numbers))
+
+  @staticmethod
+  def negate(condition):
+    """Creates a task that negates a boolean value."""
+    return Task(
+        Task._get_next_fcallid(), "negate",
+        Task._get_immediate_args((condition,)), Task._get_deferred_args((condition,)))
+
+  @staticmethod
+  def is_null(value):
+    """Creates a task that checks a value against null or `None`."""
+    return Task(
+        Task._get_next_fcallid(), "is_null",
+        Task._get_immediate_args((value,)), Task._get_deferred_args((value,)))
+
+  @staticmethod
+  def skip_if(condition):
+    """Creates a task that skips the remainder of the task list if `condition` is true."""
+    return Task(
+        Task._get_next_fcallid(), "skip_if",
+        Task._get_immediate_args((condition,)), Task._get_deferred_args((condition,)))
+
+
+def run_tasks(tasks: List[Task]):
+  """Runs tasks so that multiple tasks can be run on the same executor cycle."""
+  for i, arg in enumerate(tasks):
+    if not isinstance(arg, minescript_runtime.BasicTask):
+      raise ValueError(
+          f"All args to `run_tasks` must be tasks, but arg {i} is {arg} (type `{type(arg)}`)")
+
+  serialized_tasks = [
+    (task.fcallid, task.func_name, task.immediate_args, task.deferred_args) for task in tasks
+  ]
+
+  if tasks:
+    result = await_script_function("run_tasks", serialized_tasks)
+    return tasks[-1].result_transform(result)
+  else:
+    return None
+
+
+def schedule_tick_tasks(tasks: List[Task]) -> int:
+  """Schedules a list of tasks to run every cycle of the tick loop.
+
+  Returns:
+    ID of scheduled task list which can be passed to `cancel_scheduled_tasks(task_list_id)`.
+
+  Since: v4.0
+  """
+  for i, arg in enumerate(tasks):
+    if not isinstance(arg, minescript_runtime.BasicTask):
+      raise ValueError(
+          "All args to `schedule_tick_tasks` must be tasks, "
+          f"but arg {i} is {arg} (type `{type(arg)}`)")
+
+  serialized_tasks = [
+    (task.fcallid, task.func_name, task.immediate_args, task.deferred_args) for task in tasks
+  ]
+
+  return await_script_function("schedule_tick_tasks", serialized_tasks)
+
+
+def schedule_render_tasks(tasks: List[Task]) -> int:
+  """Schedules a list of tasks to run every cycle of the render loop.
+
+  Returns:
+    ID of scheduled task list which can be passed to `cancel_scheduled_tasks(task_list_id)`.
+
+  Since: v4.0
+  """
+  for i, arg in enumerate(tasks):
+    if not isinstance(arg, minescript_runtime.BasicTask):
+      raise ValueError(
+          "All args to `schedule_render_tasks` must be tasks, "
+          f"but arg {i} is {arg} (type `{type(arg)}`)")
+
+  serialized_tasks = [
+    (task.fcallid, task.func_name, task.immediate_args, task.deferred_args) for task in tasks
+  ]
+
+  return await_script_function("schedule_render_tasks", serialized_tasks)
+
+
+def cancel_scheduled_tasks(task_list_id: int):
+  """Cancels a scheduled task list for the currently running job.
+
+  Args:
+    task_list_id: ID of task list returned from `schedule_tick_tasks()` or `schedule_render_tasks`.
+
+  Returns:
+    `True` if `task_list_id` was successfully cancelled, `False` otherwise.
+
+  Since: v4.0
+  """
+  return await_script_function("cancel_scheduled_tasks", (task_list_id,))
 
 
 @dataclass
@@ -1209,7 +1250,6 @@ class _EventType:
   DAMAGE: str = "damage"
   EXPLOSION: str = "explosion"
   CHUNK: str = "chunk"
-  WORLD: str = "world"
 
 EventType = _EventType()
 
@@ -1296,12 +1336,6 @@ class ChunkEvent:
   x_max: int
   z_max: int
 
-@dataclass
-class WorldEvent:
-  type: str
-  time: float
-  connected: bool
-
 def _create_add_entity_event(**kwargs):
   kwargs["entity"] = EntityData(**kwargs["entity"])
   return AddEntityEvent(**kwargs)
@@ -1321,7 +1355,6 @@ _EVENT_CONSTRUCTORS = {
   EventType.DAMAGE: DamageEvent,
   EventType.EXPLOSION: ExplosionEvent,
   EventType.CHUNK: ChunkEvent,
-  EventType.WORLD: WorldEvent,
 }
 
 class EventQueue:
@@ -1339,15 +1372,13 @@ class EventQueue:
         echo("Who's there?")
   ```
 
-  Compatibility: Python only. (See `add_event_listener` for Pyjinn event handling.)
-
   Since: v4.0
   """
 
   def __init__(self):
     """Creates an event registration handler."""
     self.queue = queue.Queue()
-    self.event_listener_ids = []
+    self.event_handler_ids = []
 
   def register_key_listener(self):
     """Registers listener for `EventType.KEY` events as `KeyEvent`.
@@ -1368,7 +1399,7 @@ class EventQueue:
             echo(f"Got key {action} with code {event.key}")
     ```
     """
-    self._register(EventType.KEY, _register_key_listener)
+    self._register(EventType.KEY, register_key_listener)
 
   def register_mouse_listener(self):
     """Registers listener for `EventType.MOUSE` events as `MouseEvent`.
@@ -1383,7 +1414,7 @@ class EventQueue:
             echo(f"Got mouse {'up' if event.action == 0 else 'down'} of button {event.button}")
     ```
     """
-    self._register(EventType.MOUSE, _register_mouse_listener)
+    self._register(EventType.MOUSE, register_mouse_listener)
 
   def register_chat_listener(self):
     """Registers listener for `EventType.CHAT` events as `ChatEvent`.
@@ -1399,7 +1430,7 @@ class EventQueue:
               echo(f"> Got chat message: {event.message}")
     ```
     """
-    self._register(EventType.CHAT, _register_chat_message_listener)
+    self._register(EventType.CHAT, register_chat_message_listener)
 
   def register_outgoing_chat_interceptor(self, *, prefix: str = None, pattern: str = None):
     """Registers listener for `EventType.OUTGOING_CHAT_INTERCEPT` events as `ChatEvent`.
@@ -1428,7 +1459,7 @@ class EventQueue:
     self._register(
         EventType.OUTGOING_CHAT_INTERCEPT,
         lambda handler, exception_handler: \
-            _register_chat_message_interceptor(
+            register_chat_message_interceptor(
                 handler, exception_handler, prefix=prefix, pattern=pattern))
 
   def register_add_entity_listener(self):
@@ -1444,7 +1475,7 @@ class EventQueue:
             echo(f"Entity added: {event.entity.name}")
     ```
     """
-    self._register(EventType.ADD_ENTITY, _register_add_entity_listener)
+    self._register(EventType.ADD_ENTITY, register_add_entity_listener)
 
   def register_block_update_listener(self):
     """Registers listener for `EventType.BLOCK_UPDATE` events as `BlockUpdateEvent`.
@@ -1459,7 +1490,7 @@ class EventQueue:
             echo(f"Block updated at {event.position} to {event.new_state}")
     ```
     """
-    self._register(EventType.BLOCK_UPDATE, _register_block_update_listener)
+    self._register(EventType.BLOCK_UPDATE, register_block_update_listener)
 
   def register_take_item_listener(self):
     """Registers listener for `EventType.TAKE_ITEM` events as `TakeItemEvent`.
@@ -1474,7 +1505,7 @@ class EventQueue:
             echo(f"Item taken: {event.item.type}")
     ```
     """
-    self._register(EventType.TAKE_ITEM, _register_take_item_listener)
+    self._register(EventType.TAKE_ITEM, register_take_item_listener)
 
   def register_damage_listener(self):
     """Registers listener for `EventType.DAMAGE` events as `DamageEvent`.
@@ -1489,7 +1520,7 @@ class EventQueue:
             echo(f"Damage from {event.source}")
     ```
     """
-    self._register(EventType.DAMAGE, _register_damage_listener)
+    self._register(EventType.DAMAGE, register_damage_listener)
 
   def register_explosion_listener(self):
     """Registers listener for `EventType.EXPLOSION` events as `ExplosionEvent`.
@@ -1504,7 +1535,7 @@ class EventQueue:
             echo(f"Explosion at {event.position}")
     ```
     """
-    self._register(EventType.EXPLOSION, _register_explosion_listener)
+    self._register(EventType.EXPLOSION, register_explosion_listener)
 
   def register_chunk_listener(self):
     """Registers listener for `EventType.CHUNK` events as `ChunkEvent`.
@@ -1521,64 +1552,30 @@ class EventQueue:
             echo(f"Chunk {'loaded' if event.loaded else 'unloaded'} at {x}, {z}")
     ```
     """
-    self._register(EventType.CHUNK, _register_chunk_listener)
-
-  def register_world_listener(self):
-    """Registers listener for `EventType.WORLD` events as `WorldEvent`.
-
-    Script jobs are automatically terminated when the user's game client disconnects from a world
-    unless the script has an active "world" listener registered. All script jobs, including ones
-    with "world" listeners, are terminated when the game client exits.
-
-    Example:
-    ```
-      with EventQueue() as event_queue:
-        event_queue.register_world_listener()
-        while True:
-          event = event_queue.get()
-          if event.type == EventType.WORLD:
-            if event.connected:
-              log(f"Connected to world {world_info().name}.")
-            else:
-              log("Disconnected from world.")
-    ```
-
-    Since: v5.0
-    """
-    def register_world_listener(
-        handler: Callable[[Dict[str, Any]], None], exception_handler: ExceptionHandler = None) -> int:
-      listener_id = await_script_function("register_event_listener", ("world", {}))
-      send_script_function_request(
-          "start_event_listener", ("world", listener_id), handler, exception_handler)
-      return listener_id
-
-    self._register(EventType.WORLD, register_world_listener)
+    self._register(EventType.CHUNK, register_chunk_listener)
 
   def _register(self, event_type: str, registration_func):
     def put_typed_event(event):
       try:
-        if event["type"] != event_type:
-          print(
-              f"Unexpected event type: expected `{event_type}`, got `{event['type']}`",
-              file=sys.stderr)
+        event["type"] = event_type
         self.queue.put(event)
       except Exception as e:
         exception_message = f"Exception in event handler for `{event_type}`: {e}"
         minescript_runtime.debug_log(exception_message)
         print(exception_message, file=sys.stderr)
 
-    listener_id = registration_func(put_typed_event, self.queue.put)
-    if type(listener_id) is not int:
-      error_message = f"Expected registration function to return int but got `{listener_id}`"
+    handler_id = registration_func(put_typed_event, self.queue.put)
+    if type(handler_id) is not int:
+      error_message = f"Expected registration function to return int but got `{self.handler_id}`"
       minescript_runtime.debug_log(error_message)
       raise ValueError(error_message)
-    self.event_listener_ids.append(listener_id)
+    self.event_handler_ids.append(handler_id)
 
   def unregister_all(self):
-    listener_ids = self.event_listener_ids
-    self.event_listener_ids = []
-    for listener_id in listener_ids:
-      _unregister_event_handler(listener_id)
+    handler_ids = self.event_handler_ids
+    self.event_handler_ids = []
+    for handler_id in handler_ids:
+      unregister_event_handler(handler_id)
 
   def get(self, block: bool = True, timeout: float = None) -> Any:
     """Gets the next event in the queue.
@@ -1617,8 +1614,6 @@ class EventQueue:
 def KeyEventListener():
   """Deprecated listener for keyboard events. Use `EventQueue.register_key_listener` instead.
 
-  Compatibility: Python only.
-
   Update in v4.0:
     Deprecated in favor of `EventQueue.register_key_listener`.
 
@@ -1637,8 +1632,6 @@ def ChatEventListener():
 
   Use `EventQueue.register_chat_message_listener` instead.
 
-  Compatibility: Python only.
-
   Update in v4.0:
     Deprecated in favor of `EventQueue.register_chat_message_listener`.
 
@@ -1653,7 +1646,7 @@ def ChatEventListener():
   return event_queue
 
 
-def screen_name() -> Union[str, None]:
+def screen_name() -> str:
   """Gets the current GUI screen name, if there is one.
 
   Returns:
@@ -1666,7 +1659,7 @@ def screen_name() -> Union[str, None]:
 screen_name = ScriptFunction("screen_name", screen_name)
 
 
-def show_chat_screen(show: bool, prompt: str = None) -> bool:
+def show_chat_screen(show: bool, prompt: str = None) -> str:
   """Shows or hides the chat screen.
 
   Args:
@@ -1693,7 +1686,7 @@ def append_chat_history(message: str):
 append_chat_history = ScriptFunction("append_chat_history", append_chat_history)
 
 
-def chat_input() -> List[Union[str, int]]:
+def chat_input():
   """Gets state of chat input text.
 
   Returns:
@@ -1805,6 +1798,7 @@ class Rotations:
   """Invert the z coordinate (multiply by -1)."""
 
 
+# TODO(maxuser): Move this into Rotations class and rename to compose(...).
 def combine_rotations(rot1: Rotation, rot2: Rotation, /) -> Rotation:
   """Combines two rotation matrices into a single rotation matrix.
 
@@ -1822,7 +1816,7 @@ def combine_rotations(rot1: Rotation, rot2: Rotation, /) -> Rotation:
       rot1[6] * rot2[2] + rot1[7] * rot2[5] + rot1[8] * rot2[8])
 
 
-def _blockpack_read_world(
+def blockpack_read_world(
     pos1: BlockPos, pos2: BlockPos,
     rotation: Rotation = None, offset: BlockPos = None,
     comments: Dict[str, str] = {}, safety_limit: bool = True) -> int:
@@ -1844,10 +1838,10 @@ def _blockpack_read_world(
   """
   return (pos1, pos2, rotation, offset, comments, safety_limit)
 
-_blockpack_read_world = ScriptFunction("blockpack_read_world", _blockpack_read_world)
+blockpack_read_world = ScriptFunction("blockpack_read_world", blockpack_read_world)
 
 
-def _blockpack_read_file(filename: str) -> int:
+def blockpack_read_file(filename: str) -> int:
   """Reads a blockpack from a file.
 
   For a more user-friendly API, use the `BlockPack` class instead. (__internal__)
@@ -1863,10 +1857,10 @@ def _blockpack_read_file(filename: str) -> int:
   """
   return (filename,)
 
-_blockpack_read_file = ScriptFunction("blockpack_read_file", _blockpack_read_file)
+blockpack_read_file = ScriptFunction("blockpack_read_file", blockpack_read_file)
 
 
-def _blockpack_import_data(base64_data: str) -> int:
+def blockpack_import_data(base64_data: str) -> int:
   """Creates a blockpack from base64-encoded serialized blockpack data.
 
   For a more user-friendly API, use the `BlockPack` class instead. (__internal__)
@@ -1881,10 +1875,10 @@ def _blockpack_import_data(base64_data: str) -> int:
   """
   return (base64_data,)
 
-_blockpack_import_data = ScriptFunction("blockpack_import_data", _blockpack_import_data)
+blockpack_import_data = ScriptFunction("blockpack_import_data", blockpack_import_data)
 
 
-def _blockpack_block_bounds(blockpack_id: int) -> (BlockPos, BlockPos):
+def blockpack_block_bounds(blockpack_id: int) -> (BlockPos, BlockPos):
   """Returns bounding coordinates of blocks in the blockpack associated with blockpack_id.
 
   For a more user-friendly API, use the `BlockPack` class instead. (__internal__)
@@ -1893,10 +1887,10 @@ def _blockpack_block_bounds(blockpack_id: int) -> (BlockPos, BlockPos):
   """
   return (blockpack_id,)
 
-_blockpack_block_bounds = ScriptFunction("blockpack_block_bounds", _blockpack_block_bounds)
+blockpack_block_bounds = ScriptFunction("blockpack_block_bounds", blockpack_block_bounds)
 
 
-def _blockpack_comments(blockpack_id: int) -> Dict[str, str]:
+def blockpack_comments(blockpack_id: int) -> Dict[str, str]:
   """Returns comments stored in the blockpack associated with blockpack_id.
 
   For a more user-friendly API, use the `BlockPack` class instead. (__internal__)
@@ -1905,10 +1899,10 @@ def _blockpack_comments(blockpack_id: int) -> Dict[str, str]:
   """
   return (blockpack_id,)
 
-_blockpack_comments = ScriptFunction("blockpack_comments", _blockpack_comments)
+blockpack_comments = ScriptFunction("blockpack_comments", blockpack_comments)
 
 
-def _blockpack_write_world(
+def blockpack_write_world(
     blockpack_id: int, rotation: Rotation = None, offset: BlockPos = None) -> bool:
   """Writes blocks from a blockpack into the current world. Requires setblock and fill commands.
 
@@ -1926,10 +1920,10 @@ def _blockpack_write_world(
   """
   return (blockpack_id, rotation, offset)
 
-_blockpack_write_world = ScriptFunction("blockpack_write_world", _blockpack_write_world)
+blockpack_write_world = ScriptFunction("blockpack_write_world", blockpack_write_world)
 
 
-def _blockpack_write_file(blockpack_id: int, filename: str) -> bool:
+def blockpack_write_file(blockpack_id: int, filename: str) -> bool:
   """Writes a blockpack to a file.
 
   For a more user-friendly API, use the `BlockPack` class instead. (__internal__)
@@ -1946,10 +1940,10 @@ def _blockpack_write_file(blockpack_id: int, filename: str) -> bool:
   """
   return (blockpack_id, filename)
 
-_blockpack_write_file = ScriptFunction("blockpack_write_file", _blockpack_write_file)
+blockpack_write_file = ScriptFunction("blockpack_write_file", blockpack_write_file)
 
 
-def _blockpack_export_data(blockpack_id: int) -> str:
+def blockpack_export_data(blockpack_id: int) -> str:
   """Serializes a blockpack into a base64-encoded string.
 
   For a more user-friendly API, use the `BlockPack` class instead. (__internal__)
@@ -1964,10 +1958,10 @@ def _blockpack_export_data(blockpack_id: int) -> str:
   """
   return (blockpack_id,)
 
-_blockpack_export_data = ScriptFunction("blockpack_export_data", _blockpack_export_data)
+blockpack_export_data = ScriptFunction("blockpack_export_data", blockpack_export_data)
 
 
-def _blockpack_delete(blockpack_id: int) -> bool:
+def blockpack_delete(blockpack_id: int) -> bool:
   """Frees a currently loaded blockpack to be garbage collected.
 
   For a more user-friendly API, use the `BlockPack` class instead. (__internal__)
@@ -1982,10 +1976,10 @@ def _blockpack_delete(blockpack_id: int) -> bool:
   """
   return (blockpack_id,)
 
-_blockpack_delete = ScriptFunction("blockpack_delete", _blockpack_delete)
+blockpack_delete = ScriptFunction("blockpack_delete", blockpack_delete)
 
 
-def _blockpacker_create() -> int:
+def blockpacker_create() -> int:
   """Creates a new, empty blockpacker.
 
   For a more user-friendly API, use the `BlockPacker` class instead. (__internal__)
@@ -1997,10 +1991,10 @@ def _blockpacker_create() -> int:
   """
   return ()
 
-_blockpacker_create = ScriptFunction("blockpacker_create", _blockpacker_create)
+blockpacker_create = ScriptFunction("blockpacker_create", blockpacker_create)
 
 
-def _blockpacker_add_blocks(
+def blockpacker_add_blocks(
     blockpacker_id: int, offset: BlockPos,
     base64_setblocks: str, base64_fills: str, blocks: List[str]) -> bool:
   """Adds blocks from setblocks and fills arrays to a currently loaded blockpacker.
@@ -2023,10 +2017,10 @@ def _blockpacker_add_blocks(
   """
   return (blockpacker_id, offset, base64_setblocks, base64_fills, blocks)
 
-_blockpacker_add_blocks = ScriptFunction("blockpacker_add_blocks", _blockpacker_add_blocks)
+blockpacker_add_blocks = ScriptFunction("blockpacker_add_blocks", blockpacker_add_blocks)
 
 
-def _blockpacker_add_blockpack(
+def blockpacker_add_blockpack(
     blockpacker_id: int, blockpack_id: int,
     rotation: Rotation = None, offset: BlockPos = None) -> bool:
   """Adds the blocks within a currently loaded blockpack into a blockpacker.
@@ -2046,10 +2040,10 @@ def _blockpacker_add_blockpack(
   """
   return (blockpacker_id, blockpack_id, rotation, offset)
 
-_blockpacker_add_blockpack = ScriptFunction("blockpacker_add_blockpack", _blockpacker_add_blockpack)
+blockpacker_add_blockpack = ScriptFunction("blockpacker_add_blockpack", blockpacker_add_blockpack)
 
 
-def _blockpacker_pack(blockpacker_id: int, comments: Dict[str, str]) -> int:
+def blockpacker_pack(blockpacker_id: int, comments: Dict[str, str]) -> int:
   """Packs blocks within a blockpacker into a new blockpack.
 
   For a more user-friendly API, use the `BlockPacker` class instead. (__internal__)
@@ -2065,10 +2059,10 @@ def _blockpacker_pack(blockpacker_id: int, comments: Dict[str, str]) -> int:
   """
   return (blockpacker_id, comments)
 
-_blockpacker_pack = ScriptFunction("blockpacker_pack", _blockpacker_pack)
+blockpacker_pack = ScriptFunction("blockpacker_pack", blockpacker_pack)
 
 
-def _blockpacker_delete(blockpacker_id: int) -> bool:
+def blockpacker_delete(blockpacker_id: int) -> bool:
   """Frees a currently loaded blockpacker to be garbage collected.
 
   For a more user-friendly API, use the `BlockPacker` class instead. (__internal__)
@@ -2083,7 +2077,7 @@ def _blockpacker_delete(blockpacker_id: int) -> bool:
   """
   return (blockpacker_id,)
 
-_blockpacker_delete = ScriptFunction("blockpacker_delete", _blockpacker_delete)
+blockpacker_delete = ScriptFunction("blockpacker_delete", blockpacker_delete)
 
 
 class BlockPack:
@@ -2124,7 +2118,7 @@ class BlockPack:
     Returns:
       a new BlockPack containing blocks read from the world
     """
-    blockpack_id = _blockpack_read_world(pos1, pos2, rotation, offset, comments, safety_limit)
+    blockpack_id = blockpack_read_world(pos1, pos2, rotation, offset, comments, safety_limit)
     return BlockPack(blockpack_id)
 
   @classmethod
@@ -2141,7 +2135,7 @@ class BlockPack:
     """
     if not os.path.isabs(filename) and not relative_to_cwd:
       filename = os.path.join("minescript", "blockpacks", filename)
-    return BlockPack(_blockpack_read_file(filename))
+    return BlockPack(blockpack_read_file(filename))
 
   @classmethod
   def import_data(cls, base64_data: str) -> 'BlockPack':
@@ -2153,15 +2147,15 @@ class BlockPack:
     Returns:
       a new BlockPack containing blocks read from the base64-encoded data
     """
-    return BlockPack(_blockpack_import_data(base64_data))
+    return BlockPack(blockpack_import_data(base64_data))
 
   def block_bounds(self) -> (BlockPos, BlockPos):
     """Returns min and max bounding coordinates of blocks in this BlockPack."""
-    return _blockpack_block_bounds(self._id)
+    return blockpack_block_bounds(self._id)
 
   def comments(self) -> Dict[str, str]:
     """Returns comments stored in this BlockPack."""
-    return _blockpack_comments(self._id)
+    return blockpack_comments(self._id)
 
   def write_world(self, *, rotation: Rotation = None, offset: BlockPos = None):
     """Writes blocks from this BlockPack into the current world. Requires setblock, fill commands.
@@ -2170,7 +2164,7 @@ class BlockPack:
       rotation: rotation matrix to apply to block coordinates before writing to world
       offset: offset to apply to block coordiantes (applied after rotation)
     """
-    _blockpack_write_world(self._id, rotation, offset)
+    blockpack_write_world(self._id, rotation, offset)
 
   def write_file(self, filename: str, *, relative_to_cwd=False):
     """Writes this BlockPack to a file.
@@ -2182,40 +2176,22 @@ class BlockPack:
     """
     if not os.path.isabs(filename) and not relative_to_cwd:
       filename = os.path.join("minescript", "blockpacks", filename)
-    _blockpack_write_file(self._id, filename)
+    blockpack_write_file(self._id, filename)
 
   def export_data(self) -> str:
     """Serializes this BlockPack into a base64-encoded string.
 
     Returns:
       a base64-encoded string containing this blockpack's data
-   
     """
-    return _blockpack_export_data(self._id)
-  
-  def visit_blocks(
-    setblock: Callable[[int, int, int, str], None],
-    fill: Callable[[int, int, int, int, int, int, str], None]) -> None:
-    """Invokes the given callbacks to visit all the blocks in this BlockPack.
-
-    Args:
-      setblock: for each block that's not adjacent to any blocks of the same type, invoke this as
-          setblock(x, y, z, block)
-      fill: for each axis-aligned bounding box (aabb) of blocks of the same type greater than 1x1x1
-          between opposing corners (x1, y1, z1) and (x2, y2, z2), invoke this as
-          fill(x1, y1, z1, x2, y2, z2, block)
-    
-    Compatibility: Pyjinn only.
-    """
-    raise NotImplementedError("visit_blocks is implemented in Java for Pyjinn scripts")
+    return blockpack_export_data(self._id)
 
   def __del__(self):
     """Frees this BlockPack to be garbage collected."""
-    _blockpack_delete(self._id)
+    blockpack_delete(self._id)
 
 
 class BlockPackerException(Exception):
-  """Exception thrown from failed `BlockPack` operations."""
   pass
 
 
@@ -2246,7 +2222,7 @@ class BlockPacker:
   def __init__(self):
     """Creates a new, empty blockpacker."""
 
-    self._id = _blockpacker_create()
+    self._id = blockpacker_create()
     self.offset = None # offset for 16-bit positions recorded in setblocks and fills
     self.setblocks = array("h")
     self.fills = array("h")
@@ -2320,7 +2296,7 @@ class BlockPacker:
       self.setblocks.byteswap()
       self.fills.byteswap()
 
-    _blockpacker_add_blocks(
+    blockpacker_add_blocks(
         self._id, self.offset,
         base64.b64encode(self.setblocks.tobytes()).decode("utf-8"),
         base64.b64encode(self.fills.tobytes()).decode("utf-8"),
@@ -2340,7 +2316,7 @@ class BlockPacker:
       rotation: rotation matrix to apply to block coordinates before adding to blockpacker
       offset: offset to apply to block coordiantes (applied after rotation)
     """
-    _blockpacker_add_blockpack(self._id, blockpack._id, rotation, offset)
+    blockpacker_add_blockpack(self._id, blockpack._id, rotation, offset)
 
   def pack(self, *, comments: Dict[str, str] = {}) -> BlockPack:
     """Packs blocks within this BlockPacker into a new BlockPack.
@@ -2352,11 +2328,11 @@ class BlockPacker:
       a new BlockPack containing a snapshot of blocks from this BlockPacker
     """
     self._flush_blocks()
-    return BlockPack(_blockpacker_pack(self._id, comments))
+    return BlockPack(blockpacker_pack(self._id, comments))
 
   def __del__(self):
     """Frees this BlockPacker to be garbage collected."""
-    _blockpacker_delete(self._id)
+    blockpacker_delete(self._id)
 
 JavaHandle = int
 java_null = 0
@@ -2372,8 +2348,6 @@ def java_class(name: str) -> JavaHandle:
   If running Minecraft with obfuscated symbols, `name` must be the fully qualified and obfuscated
   class name.
 
-  Compatibility: Python only.
-
   Since: v4.0
   """
   return (name,)
@@ -2382,9 +2356,6 @@ java_class = ScriptFunction("java_class", java_class)
 
 def java_string(s: str) -> JavaHandle:
   """Returns handle to a Java String.
-
-  Compatibility: Python only.
-
   Since: v4.0
   """
   return (s,)
@@ -2393,9 +2364,6 @@ java_string = ScriptFunction("java_string", java_string)
 
 def java_double(d: float) -> JavaHandle:
   """Returns handle to a Java Double.
-
-  Compatibility: Python only.
-
   Since: v4.0
   """
   return (d,)
@@ -2404,9 +2372,6 @@ java_double = ScriptFunction("java_double", java_double)
 
 def java_float(f: float) -> JavaHandle:
   """Returns handle to a Java Float.
-
-  Compatibility: Python only.
-
   Since: v4.0
   """
   return (f,)
@@ -2415,9 +2380,6 @@ java_float = ScriptFunction("java_float", java_float)
 
 def java_long(l: int) -> JavaHandle:
   """Returns handle to a Java Long.
-
-  Compatibility: Python only.
-
   Since: v4.0
   """
   return (l,)
@@ -2426,9 +2388,6 @@ java_long = ScriptFunction("java_long", java_long)
 
 def java_int(i: int) -> JavaHandle:
   """Returns handle to a Java Integer
-
-  Compatibility: Python only.
-
   Since: v4.0
   """
   return (i,)
@@ -2437,26 +2396,21 @@ java_int = ScriptFunction("java_int", java_int)
 
 def java_bool(b: bool) -> JavaHandle:
   """Returns handle to a Java Boolean.
-
-  Compatibility: Python only.
-
   Since: v4.0
   """
   return (b,)
 
 java_bool = ScriptFunction("java_bool", java_bool)
 
-def java_ctor(clazz: JavaHandle):
+def java_ctor(clss: JavaHandle):
   """Returns handle to a constructor set for the given class handle.
 
   Args:
-    clazz: Java class handle returned from `java_class`
-
-  Compatibility: Python only.
+    clss: Java class handle returned from `java_class`
 
   Since: v4.0
   """
-  return (clazz,)
+  return (clss,)
 
 java_ctor = ScriptFunction("java_ctor", java_ctor)
 
@@ -2470,33 +2424,25 @@ def java_new_instance(ctor: JavaHandle, *args: List[JavaHandle]) -> JavaHandle:
   Returns:
     handle to newly created Java object.
 
-  Compatibility: Python only.
-
   Since: v4.0
   """
   return (ctor, *args)
 
 java_new_instance = ScriptFunction("java_new_instance", java_new_instance)
 
-def java_member(clazz: JavaHandle, name: str) -> JavaHandle:
+def java_member(clss: JavaHandle, name: str) -> JavaHandle:
   """Gets Java member(s) matching `name`.
-
-  Args:
-    clazz: Java class handle returned from `java_class` to look up member within
-    name: name of member to look up within `clazz`
 
   Returns:
     Java member object for use with `java_access_field` or `java_call_method`.
 
-  Compatibility: Python only.
-
   Since: v4.0
   """
-  return (clazz, name)
+  return (clss, name)
 
 java_member = ScriptFunction("java_member", java_member)
 
-def java_access_field(target: JavaHandle, field: JavaHandle) -> Union[JavaHandle, None]:
+def java_access_field(target: JavaHandle, field: JavaHandle) -> JavaHandle:
   """Accesses a field on a target Java object.
 
   Args:
@@ -2506,15 +2452,13 @@ def java_access_field(target: JavaHandle, field: JavaHandle) -> Union[JavaHandle
   Returns:
     Handle to Java object returned from field access, or `None` if `null`.
 
-  Compatibility: Python only.
-
   Since: v4.0
   """
   return (target, field)
 
 java_access_field = ScriptFunction("java_access_field", java_access_field)
 
-def java_call_method(target: JavaHandle, method: JavaHandle, *args: List[JavaHandle]) -> Union[JavaHandle, None]:
+def java_call_method(target: JavaHandle, method: JavaHandle, *args: List[JavaHandle]) -> JavaHandle:
   """Invokes a method on a target Java object.
 
   Args:
@@ -2524,8 +2468,6 @@ def java_call_method(target: JavaHandle, method: JavaHandle, *args: List[JavaHan
 
   Returns:
     handle to Java object returned from method call, or `None` if `null`.
-
-  Compatibility: Python only.
 
   Since: v4.0
   """
@@ -2544,8 +2486,6 @@ def java_call_script_function(
   Returns:
     handle to Java object (`Optional<JsonElement>`) returned from the script function.
 
-  Compatibility: Python only.
-
   Since: v4.0
   """
   return (func_name, *args)
@@ -2554,16 +2494,13 @@ java_call_script_function = ScriptFunction("java_call_script_function", java_cal
 
 def java_array_length(array: JavaHandle) -> int:
   """Returns length of Java array as Python integer.
-
-  Compatibility: Python only.
-
   Since: v4.0
   """
   return (array,)
 
 java_array_length = ScriptFunction("java_array_length", java_array_length)
 
-def java_array_index(array: JavaHandle, i: int) -> Union[JavaHandle, None]:
+def java_array_index(array: JavaHandle, i: int) -> JavaHandle:
   """Gets indexed element of Java array handle.
 
   Args:
@@ -2573,37 +2510,14 @@ def java_array_index(array: JavaHandle, i: int) -> Union[JavaHandle, None]:
   Returns:
     handle to object at `array[i]` in Java, or `None` if `null`.
 
-  Compatibility: Python only.
-
   Since: v4.0
   """
   return (array, i)
 
 java_array_index = ScriptFunction("java_array_index", java_array_index)
 
-def java_new_array(element_type: JavaHandle, *elements: List[JavaHandle]) -> JavaHandle:
-  """Creates a new Java array of the given element type with the given elements.
-
-  Args:
-    element_type: handle to Java class (Class<?>) to use for the new array's type
-    elements: handles to Java objects to populate the new array
-
-  Returns:
-    handle to new Java array.
-
-  Compatibility: Python only.
-
-  Since: v5.0
-  """
-  return (element_type, *elements)
-
-java_new_array = ScriptFunction("java_new_array", java_new_array)
-
 def java_to_string(target: JavaHandle) -> str:
   """Returns Python string from calling `target.toString()` in Java.
-  
-  Compatibility: Python only.
-
   Since: v4.0
   """
   return (target,)
@@ -2616,201 +2530,17 @@ def java_assign(dest: JavaHandle, source: JavaHandle):
   Upon success, both `dest` and `source` reference the same Java object that was initially
   referenced by `source`.
 
-  Compatibility: Python only.
-
   Since: v4.0
   """
   return (dest, source)
 
 java_assign = ScriptFunction("java_assign", java_assign)
 
-def java_field_names(clazz: JavaHandle) -> List[str]:
-  """Returns a list of fields names for the class referenced by handle `clazz`.
-
-  If mappings are installed, official field names are returned.
-
-  Compatibility: Python only.
-
-  Since: v5.0
-  """
-  return (clazz,)
-
-java_field_names = ScriptFunction("java_field_names", java_field_names)
-
-def java_method_names(clazz: JavaHandle) -> List[str]:
-  """Returns a list of methods names for the class referenced by handle `clazz`.
-
-  If mappings are installed, official method names are returned.
-
-  Compatibility: Python only.
-
-  Since: v5.0
-  """
-  return (clazz,)
-
-java_method_names = ScriptFunction("java_method_names", java_method_names)
-
 def java_release(*targets: List[JavaHandle]):
   """Releases Java reference(s) referred to by `targets`.
-
-  Compatibility: Python only.
-
   Since: v4.0
   """
   return targets
 
 java_release = ScriptFunction("java_release", java_release)
 
-
-# The definitions below are provided for IDEs and are not used in Python scripts.
-if "Pyjinn" in sys.version:
-  def JavaClass(class_name: str) -> JavaHandle:
-    """Pyjinn built-in that returns a Java class given its fully qualified name.
-
-    Compatibility: Pyjinn only. (Supported in Python via java.py.)
-    """
-    raise NotImplementedError("JavaClass is implemented in Java for Pyjinn scripts")
-
-  def JavaArray(pyjinn_tuple, element_type: JavaHandle = None) -> JavaHandle:
-    """Pyjinn built-in that returns a Java array given a Pyjinn tuple and optional element type.
-
-    Compatibility: Pyjinn only.
-    """
-    raise NotImplementedError("JavaArray is implemented in Java for Pyjinn scripts")
-
-  def JavaFloat(number) -> JavaHandle:
-    """Pyjinn built-in that invokes the java.lang.Float constructor.
-
-    Compatibility: Pyjinn only.
-    """
-    raise NotImplementedError("JavaFloat is implemented in Java for Pyjinn scripts")
-
-  def JavaInt(number) -> JavaHandle:
-    """Pyjinn built-in that invokes the java.lang.Integer constructor.
-
-    Compatibility: Pyjinn only.
-    """
-    raise NotImplementedError("JavaInt is implemented in Java for Pyjinn scripts")
-
-  def JavaList(pyjinn_list) -> JavaHandle:
-    """Pyjinn built-in that returns the Java List representing the given Pyjinn list.
-
-    Compatibility: Pyjinn only.
-    """
-    raise NotImplementedError("JavaList is implemented in Java for Pyjinn scripts")
-
-  def JavaMap(pyjinn_list) -> JavaHandle:
-    """Pyjinn built-in that returns the Java Map representing the given Pyjinn dict.
-
-    Compatibility: Pyjinn only.
-    """
-    raise NotImplementedError("JavaMap is implemented in Java for Pyjinn scripts")
-
-  def JavaString(pyjinn_str) -> JavaHandle:
-    """Pyjinn built-in that exposes the Java String API for the given Pyjinn str.
-
-    Compatibility: Pyjinn only.
-    """
-    raise NotImplementedError("JavaString is implemented in Java for Pyjinn scripts")
-
-  def add_event_listener(event_type: str, callback: Callable[[Any], None], **args) -> int:
-    """Adds an event listener with the given callback and args.
-
-    Supported event types:
-    
-    - `"add_entity"` - `AddEntityEvent`
-    - `"block_update"` - `BlockUpdateEvent`
-    - `"chat"` - `ChatEvent`
-    - `"chunk"` - `ChunkEvent`
-    - `"damage"` - `DamageEvent`
-    - `"explosion"` - `ExplosionEvent`
-    - `"key"` - `KeyEvent`
-    - `"mouse"` - `MouseEvent`
-    - `"outgoing_chat_intercept"` - `ChatEvent`
-    - `"render"` - `RenderEvent`
-    - `"take_item"` - `TakeItemEvent`
-    - `"tick"` - `TickEvent`
-    - `"world"` - `WorldEvent`
-
-    Compatibility: Pyjinn only. (See `EventQueue` for Python event handling.)
-    """
-    raise NotImplementedError("add_event_listener is implemented in Java for Pyjinn scripts")
-
-  def remove_event_listener(listener_id: int) -> bool:
-    """Removes an event listener previously added using `add_event_listener()`.
-
-    Compatibility: Pyjinn only.
-    """
-    raise NotImplementedError("remove_event_listener is implemented in Java for Pyjinn scripts")
-
-  @dataclass
-  class RenderEvent:
-    """Render event for use with callback to `add_event_listener()`.
-
-    Compatibility: Pyjinn only.
-    """
-    type: str  # "render"
-    context: Any  # Render context provided by the mod loader.
-    time: float
-
-  @dataclass
-  class TickEvent:
-    """Tick event for use with callback to `add_event_listener()`.
-
-    Compatibility: Pyjinn only.
-    """
-    type: str  # "tick"
-    time: float
-
-  def set_timeout(callback: Callable[..., None], timer_millis: int, *args, **kwargs) -> int:
-    """Schedules `callback` to be invoked once after `timer_millis` milliseconds.
-    
-    Returns:
-      an integer ID for the callback which can be canceled with `remove_event_listener()`.
-
-    Compatibility: Pyjinn only.
-    """
-    raise NotImplementedError("set_timeout is not compatible with Python")
-
-  def set_interval(callback: Callable[..., None], timer_millis: int, *args, **kwargs) -> int:
-    """Schedules `callback` to be invoked every `timer_millis` milliseconds.
-    
-    Returns:
-      an integer ID for the callback which can be canceled with `remove_event_listener()`.
-
-    Compatibility: Pyjinn only.
-    """
-    raise NotImplementedError("set_interval is not compatible with Python")
-
-  class ManagedCallback:
-    """Wrapper for managing callbacks passed to Java APIs.
-
-    Example:
-
-    ```
-    callback = ManagedCallback(on_hud_render)
-    HudRenderCallback.EVENT.register(HudRenderCallback(callback))
-
-    # Cancel after 1 second (1000 milliseconds):
-    set_timeout(callback.cancel, 1000)
-    ```
-
-    Compatibility: Pyjinn only.
-    """
-    def __init__(self, callback, cancel_on_exception=True, default_value=None):
-      """Creates a managed callback.
-
-      Args:
-        callback: a callable function or object to manage
-        cancel_on_exception: if the callback raises an exception, cancel the callback
-        default_value: value to return immediately if callback is called after being canceled
-      """
-      raise NotImplementedError("ManagedCallback.__init__ is not compatible with Python")
-
-    def cancel(self):
-      """Cancels the callback, returning `default_value` if it continues to be called."""
-      pass
-
-    def __call__(self, *args):
-      """Calls this callback, checking for cancellation."""
-      pass

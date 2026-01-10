@@ -1,10 +1,24 @@
 # AI GF MC
 - minecraft python script extracts game data -> local llm (maybe -> tts in the future)
 - BOOM
-# Inspiration
+# Credits
 <!-- [![aigf](https://github.com/FPTSTUDEN/AI-GF-MC/blob/78e6beb2dfb16c07e8d1db7fc97faa9ffa485453/misc/ai_catsdontlikecoffee.png){:width=200px}](https://www.instagram.com/catsdontlikecoffee/) -->
-<img src="misc\ai_catsdontlikecoffee.png" alt="catsdontlikecofee" width="150"/>
-this guy's videos are insane and i like it
+### catsdontlikecoffee
+<a href="https://www.instagram.com/catsdontlikecoffee/">
+    <img src="misc\ai_catsdontlikecoffee.png" alt="catsdontlikecofee" width="150"/>
+</a>
+
+project idea partially inspired by this channel
+
+also the videos are insane and i like it
+
+<a href="https://www.instagram.com/catsdontlikecoffee/">Check them out</a>
+
+### sam-ple
+their repo helped me a lot with:
+- latest version's syntax
+- biolog (a modified version of their biomerecorder)
+<a href="https://github.com/sam-ple">Check them out</a>
 
 # Stable files
 - remote_minescript/elog.py - event logger to /.minecraft/event_log.txt
@@ -12,11 +26,19 @@ this guy's videos are insane and i like it
 # Prerequisites
 - Minecraft with Minescript mod
 - Ollama: mistral:7b-instruct
+- Any mod with chat hiding functionality (to not expose your spammy logging chat)
 
 # TODO
 ## Logging
-- Surrounding: block, biome... 
-- Player action: mining, farming,...
+(...: in progress, V: Done, X: Failed attempt)
+- death
+- low_health  ...  
+- mob_near V
+- achievement
+- enter_dimension (X) / biome V
+- lava_near
+
+- Player action (long duration): mining, farming,...
 - Inventory: collective, should be new items only
 
 ## Log parser -> comment

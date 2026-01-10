@@ -1,6 +1,7 @@
 from minescript import *
 import time
 import math
+# import minescript.biotrack as biotrack
 
 # from minescript.system.lib.minescript import chat # no need 
 
@@ -42,7 +43,27 @@ def direction_vector(from_pos, to_pos):
 
 def format_position(pos):
     return f"({pos[0]:.1f}, {pos[1]:.1f}, {pos[2]:.1f})"
-
+# ------------------ biome ------------------
+# BIOMES = [
+#     "the_void", "plains", "sunflower_plains", "snowy_plains", "ice_spikes",
+#     "desert", "swamp", "mangrove_swamp", "forest", "flower_forest",
+#     "birch_forest", "dark_forest", "old_growth_birch_forest", "old_growth_pine_taiga",
+#     "old_growth_spruce_taiga", "taiga", "snowy_taiga", "savanna", "savanna_plateau",
+#     "windswept_hills", "windswept_gravelly_hills", "windswept_forest",
+#     "windswept_savanna", "jungle", "sparse_jungle", "bamboo_jungle",
+#     "badlands", "eroded_badlands", "wooded_badlands", "meadow", "cherry_grove",
+#     "grove", "snowy_slopes", "frozen_peaks", "jagged_peaks", "stony_peaks",
+#     "river", "frozen_river", "beach", "snowy_beach", "stony_shore",
+#     "warm_ocean", "lukewarm_ocean", "deep_lukewarm_ocean", "ocean", "deep_ocean",
+#     "cold_ocean", "deep_cold_ocean", "frozen_ocean", "deep_frozen_ocean",
+#     "mushroom_fields", "dripstone_caves", "lush_caves", "deep_dark"
+# ]
+# x, y, z = map(int, player_position())
+# SCORE_OBJ = "visited_biomes"
+# TEMP_COUNTER = "biome_counter"
+# player = player_name()
+# birec.init_scoreboard()
+# birec.periodic_check()
 # ------------------ state ------------------
 
 last_pos = None
@@ -76,18 +97,22 @@ def main():
         player = get_player()
 
         # ---- footsteps (movement) ----
-        if distance(player.position, last_pos) > 2.5:
-            log(f"Player ran {direction_vector(last_pos, player.position)[3]}to {format_position(player.position)}")
-        elif distance(player.position, last_pos) > 1.3:
-            log(f"Player moved {direction_vector(last_pos, player.position)[3]}to {format_position(player.position)}")
-        elif distance(player.position, last_pos) > 0.2:
-            log(f"Player is shifting {direction_vector(last_pos, player.position)[3]}to {format_position(player.position)}")
+        # if distance(player.position, last_pos) > 2.5:
+        #     log(f"Player ran {direction_vector(last_pos, player.position)[3]}to {format_position(player.position)}")
+        # elif distance(player.position, last_pos) > 1.3:
+        #     log(f"Player moved {direction_vector(last_pos, player.position)[3]}to {format_position(player.position)}")
+        # elif distance(player.position, last_pos) > 0.2:
+        #     log(f"Player is shifting {direction_vector(last_pos, player.position)[3]}to {format_position(player.position)}")
         
 
         # ---- damage detection ----
         if player.health < last_health:
             damage = last_health - player.health
             log(f"Player took damage ({damage:.1f} HP)")
+
+        # ---- low health warning ----
+        if player.health <= 5.0 and last_health > 5.0:
+            log(f"Warning: Player health is {player.health:.1f} HP!")
 
         # ---- nearby hostile mobs ----
         # for e in entities(): echo(e['name'])
