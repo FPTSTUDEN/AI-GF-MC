@@ -7,3 +7,8 @@ minescript
 
 # Ignore Visual Studio Code settings
 .vscode/settings.json
+
+config.txt
+
+*.pyc
+__pycache__/
