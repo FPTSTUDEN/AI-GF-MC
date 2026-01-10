@@ -11,4 +11,4 @@ minescript
 config.txt
 
 *.pyc
-__pycache__/
+remote_minescript/system/lib/__pycache__/
