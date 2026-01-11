@@ -52,12 +52,18 @@ def on_player_damage(amount, cause, health):
     player_damage_times[:] = [x for x in player_damage_times if t - x <= UNDER_ATTACK_WINDOW]
 
     # raw event
-    write_event({
-        "type": "player_damage",
-        "amount": round(amount, 1),
-        "cause": str(cause),
-        "health": round(health, 1)
-    })
+    if health > 0:
+        write_event({
+            "type": "player_damage",
+            "amount": round(amount, 1),
+            "cause": str(cause),
+            "health": round(health, 1)
+        })
+    else:
+        write_event({
+            "type": "player_death",
+            "cause": str(cause)
+        })
 
     # aggregate
     if len(player_damage_times) >= UNDER_ATTACK_HITS:
@@ -176,25 +182,14 @@ def main():
             damage = last_health - player.health
             source=damage_event.source
             log(f"Player took damage ({damage:.1f} HP) by {source} current health {player.health:.1f}")
-            write_event({
-                "type": "player_damage",
-                "amount": round(damage, 1),
-                "cause": str(source),
-                "health": round(player.health, 1)
-            })
+            on_player_damage(damage,source,player.health)
         elif damage_event.cause_uuid==player.uuid:
             for entity in get_entities():
                 if entity.uuid==damage_event.entity_uuid:
                     victim=entity
                     break
             log(f"#{victim.id} {victim.name} took damage by player current health {victim.health}")
-            write_event({
-                "type": "mob_damage",
-                "mob_id": victim.id,
-                "mob": victim.name,
-                "cause": "player",
-                "health": round(victim.health, 1)
-            })
+            on_victim_damage(victim)
     except:
         log("Warning: No damage listener yet")
         
@@ -203,7 +198,7 @@ def main():
     if player.health <= 5.0 and last_health > 5.0:
         log(f"Warning: Player health is {player.health:.1f} HP!")
         write_event({
-            "type": "low_health",
+            "type": "player_low_health",
             "health": round(player.health, 1)
         })
 
@@ -219,15 +214,16 @@ def periodic_danger_check():
                 for monster in ["creeper","zombie","skeleton","spider","enderman","witch","drowned","husk","stray","phantom","pillager","ravager","evoker","vindicator"]:
                     if monster in e.type and distance(player.position, e.position) < 5:
                         log(f"Hostile mob nearby: {e.name} at {format_position(e.position)}")
-                        write_event({
-                            "type": "mob_near",
-                            "mob": e.name,
-                            "position": {
-                                "x": round(e.position[0], 1),
-                                "y": round(e.position[1], 1),
-                                "z": round(e.position[2], 1)
-                            }
-                        })
+                        # write_event({
+                        #     "type": "mob_near",
+                        #     "mob": e.name,
+                        #     "position": {
+                        #         "x": round(e.position[0], 1),
+                        #         "y": round(e.position[1], 1),
+                        #         "z": round(e.position[2], 1)
+                        #     }
+                        # })
+                        on_mob_near(e)
                         seen_entity_ids.add(e.id)
         else:
             if e.id in [a.id for a in last_seen_dangers]:
@@ -240,11 +236,7 @@ def periodic_danger_check():
                 # if abs(proxity_now-proxity_before)>1.5:
                 if proxity_now < proxity_before:
                     log(f"Incoming #{e.id} {e.name}!")
-                    write_event({
-                        "type": "mob_incoming",
-                        "mob_id": e.id,
-                        "mob": e.name
-                    })
+                    on_mob_incoming(e)
 
                 elif proxity_now > proxity_before:
                     log(f"Distancing from #{e.id} {e.name}...")
@@ -256,7 +248,7 @@ def periodic_danger_check():
 
                 last_seen_dangers.remove(last_seen_dangers[[a.id for a in last_seen_dangers].index(e.id)])
             last_seen_dangers.append(e) if len(last_seen_dangers)<5 else last_seen_dangers.append(e) and last_seen_dangers.pop(0)
-    threading.Timer(2, periodic_danger_check).start()
+    threading.Timer(1, periodic_danger_check).start()
 
 
 def damage_check():

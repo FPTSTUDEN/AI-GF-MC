@@ -3,7 +3,8 @@ import minescript as m
 import threading 
 #modified
 from minescript import EventQueue, EventType
-
+from event_writer import *
+import time
 m.execute("gamerule send_command_feedback false")
 
 BIOMES = [
@@ -129,6 +130,10 @@ init_scoreboard()
 periodic_check()
 #modified
 m.echo("🌍 BiomeTracker running. Use --status to check progress, --check1 for visited, --check2 for not visited, --reset to reset.")
+last_biome=""
+last_biome_time=None
+
+
 
 with EventQueue() as eq:
     eq.register_chat_listener()
@@ -140,6 +145,22 @@ with EventQueue() as eq:
                 current_biome_nbt = msg.split()[-1].strip()
                 m.echo("Current biome from NBT: " + current_biome_nbt + str(biome_count[current_biome_nbt])) #debug
                 biome_count[current_biome_nbt]+=2
+
+                t=time.time()
+                if current_biome_nbt!=last_biome:
+                    if last_biome != "":
+                        duration = int(t - last_biome_time)
+                        write_event({
+                            "type": "biome_exit",
+                            "biome": last_biome,
+                            "duration_sec": duration
+                        })
+                    last_biome_time=t
+                    last_biome=current_biome_nbt
+                    write_event({
+                        "type": "biome_enter",
+                        "biome": current_biome_nbt
+                    })
                 # m.echo(msg) #dont
             if msg.startswith("<") and ">" in msg:
                 msg = msg.split(">", 1)[1].strip()
