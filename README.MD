@@ -22,8 +22,9 @@ their repo helped me a lot with:
 <a href="https://github.com/sam-ple">Check them out</a>
 
 # Stable files
-- **remote_minescript/elog.py** - event logger to /.minecraft/event_log.txt
+- **remote_minescript/elog.py** - event logger to /.minecraft/events.txt
 - **remote_minescript/biolog.py** - biome & time on biome logger 
+- **main.py** - THE AI
 
 # Prerequisites
 - **Minecraft** with **Minescript** mod
@@ -33,6 +34,7 @@ their repo helped me a lot with:
 # TODO
 ## Logging
 (...: in progress, V: Done, X: Failed attempt)
+- **under_attack aggregator** not working ...
 - **damaged** (cause: lava,monster...) V
 - **attacked entity** V
 - death ... (0 HP detection possible)

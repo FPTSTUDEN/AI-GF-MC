@@ -1,0 +1,12 @@
+{"type": "biome_enter", "biome": "plains", "timestamp": 1768128982}
+{"type": "mob_near", "mob": "Creeper", "mob_id": 59, "timestamp": 1768128989}
+{"type": "mob_near", "mob": "Spider", "mob_id": 60, "timestamp": 1768128990}
+{"type": "imminent_threat", "mobs": ["Spider", "Creeper"], "timestamp": 1768128990}
+{"type": "mob_incoming", "mob": "Creeper", "mob_id": 59, "timestamp": 1768128991}
+{"type": "victim_damage", "mob_id": 60, "mob": "Spider", "cause": "player", "health": 7.0, "timestamp": 1768128991}
+{"type": "mob_near", "mob": "Creeper", "mob_id": 47, "timestamp": 1768128992}
+{"type": "mob_incoming", "mob": "Creeper", "mob_id": 59, "timestamp": 1768128992}
+{"type": "mob_retreat", "mob_id": 60, "mob": "Spider", "timestamp": 1768128992}
+{"type": "player_low_health", "health": 2.0, "timestamp": 1768128993}
+{"type": "mob_incoming", "mob": "Spider", "mob_id": 60, "timestamp": 1768128993}
+{"type": "player_death", "cause": "explosion.player", "timestamp": 1768128994}
