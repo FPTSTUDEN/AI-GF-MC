@@ -45,7 +45,7 @@ def save_state(state):
 def build_prompt(event: GameEvent, mood: dict):
     urgency = (
         "critical" if event.severity >= 0.85 else
-        "high" if event.severity >= 0.6 else
+        "high" if event.severity >= 0.5 else #0.6 -> 0.5
         "low"
     )
 
@@ -55,8 +55,8 @@ def build_prompt(event: GameEvent, mood: dict):
         who = "you" if event.target == "player" else event.target
         situation.append(
             f"{who} are taking damage"
-            + (f" from {event.source}" if event.source else "")
-            # + (f" ({event.count} hits)" if event.count else "")
+            + (f" from {event.cause}" if event.cause else "")
+            + (f" ({event.intensity} hits)" if event.count else "")
         )
 
     elif event.type == "imminent_threat":
@@ -64,12 +64,12 @@ def build_prompt(event: GameEvent, mood: dict):
             f"Hostile mobs are closing in ({len(event.mobs)} nearby)"
         )
 
-    elif event.type == "low_health":
+    elif event.type == "player_low_health":
         situation.append(
             f"Health is critically low ({event.health:.1f} HP)"
         )
 
-    elif event.type == "death":
+    elif event.type == "player_death":
         situation.append(
             f"You just died due to {event.cause}"
         )
@@ -83,6 +83,9 @@ def build_prompt(event: GameEvent, mood: dict):
         situation.append(
             f"You spent a long time in the {event.biome} biome"
         )
+    else: 
+        print(f"-----{event.type}-----")
+        situation.append(str(event.type))
 
     return f"""
 You are an AI companion observing a Minecraft session.
@@ -101,7 +104,7 @@ No game mechanics.
 # short sentences modification
 # Removed: Stay in character. 
 
-SEVERITY_THRESHOLD = 0.4  # tune this
+SEVERITY_THRESHOLD = 0.3  # tune this
 
 def handle_event(event: GameEvent):
     state = load_state()
@@ -125,14 +128,27 @@ def handle_event(event: GameEvent):
     prompt = build_prompt(event, state["mood"])  # pass mood dict, not intent
 
     response = generate_response(prompt)
-    print("AI:", response)
+    responses.append(response)
+
+    # print("AI:", response)
+    print(prompt)
 
     save_state(state)
 
 
 # ---- TEST ----
 if __name__ == "__main__":
+    global responses
+    responses=[]
     # test_event = GameEvent(type="death", cause="creeper")
     # handle_event(test_event)
     for event in replay_events("events.log"):
         handle_event(event)
+    for res in responses:
+        print(res)
+
+
+'''
+1. add debug printing for relevant parameters: should-comment, saved state... after each iteration
+2. add minor logic fixes so overall structure is more refined
+'''

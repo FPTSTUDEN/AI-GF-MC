@@ -18,17 +18,19 @@ also the videos are insane and i like it
 their repo helped me a lot with:
 - latest version's syntax
 - biolog (a modified version of their biomerecorder)
+### Other AIs
+- chatgpt, gemini, github copilot... for refining my code and saving my time
 
 <a href="https://github.com/sam-ple">Check them out</a>
 
 # Stable files
 - **remote_minescript/elog.py** - event logger to /.minecraft/events.txt
 - **remote_minescript/biolog.py** - biome & time on biome logger 
-- **main.py** - THE AI
+- **main.py** - THE AI: one-time parses events.log for now
 
 # Prerequisites
 - **Minecraft** with **Minescript** mod
-- **Ollama**: mistral:7b-instruct
+- **Ollama**: dolphin3:latest
 - Any mod with **chat hiding** functionality (to not expose your spammy logging chat)
 
 # TODO

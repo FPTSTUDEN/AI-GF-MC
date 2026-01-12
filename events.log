@@ -1,12 +1,30 @@
-{"type": "biome_enter", "biome": "plains", "timestamp": 1768128982}
-{"type": "mob_near", "mob": "Creeper", "mob_id": 59, "timestamp": 1768128989}
-{"type": "mob_near", "mob": "Spider", "mob_id": 60, "timestamp": 1768128990}
-{"type": "imminent_threat", "mobs": ["Spider", "Creeper"], "timestamp": 1768128990}
-{"type": "mob_incoming", "mob": "Creeper", "mob_id": 59, "timestamp": 1768128991}
-{"type": "victim_damage", "mob_id": 60, "mob": "Spider", "cause": "player", "health": 7.0, "timestamp": 1768128991}
-{"type": "mob_near", "mob": "Creeper", "mob_id": 47, "timestamp": 1768128992}
-{"type": "mob_incoming", "mob": "Creeper", "mob_id": 59, "timestamp": 1768128992}
-{"type": "mob_retreat", "mob_id": 60, "mob": "Spider", "timestamp": 1768128992}
-{"type": "player_low_health", "health": 2.0, "timestamp": 1768128993}
-{"type": "mob_incoming", "mob": "Spider", "mob_id": 60, "timestamp": 1768128993}
-{"type": "player_death", "cause": "explosion.player", "timestamp": 1768128994}
+{"type": "biome_enter", "biome": "plains", "timestamp": 1768187594}
+{"type": "player_damage", "amount": 3.0, "cause": "arrow", "health": 17.0, "timestamp": 1768187600}
+{"type": "player_damage", "amount": 1.7, "cause": "arrow", "health": 15.3, "timestamp": 1768187600}
+{"type": "player_damage", "amount": -0.5, "cause": "fall", "health": 16.5, "timestamp": 1768187601}
+{"type": "under_attack", "target": "player", "intensity": 3, "cause": "fall", "timestamp": 1768187601}
+{"type": "player_damage", "amount": 9.3, "cause": "arrow", "health": 7.2, "timestamp": 1768187602}
+{"type": "mob_near", "mob": "Spider", "mob_id": 4296, "timestamp": 1768187605}
+{"type": "mob_near", "mob": "Creeper", "mob_id": 4895, "timestamp": 1768187605}
+{"type": "imminent_threat", "mobs": ["Creeper", "Spider"], "timestamp": 1768187605}
+{"type": "player_damage", "amount": 2.0, "cause": "mob", "health": 5.8, "timestamp": 1768187605}
+{"type": "mob_near", "mob": "Creeper", "mob_id": 4902, "timestamp": 1768187606}
+{"type": "mob_incoming", "mob": "Spider", "mob_id": 4296, "timestamp": 1768187607}
+{"type": "mob_retreat", "mob_id": 4296, "mob": "Spider", "timestamp": 1768187608}
+{"type": "mob_near", "mob": "Skeleton", "mob_id": 4840, "timestamp": 1768187608}
+{"type": "mob_retreat", "mob_id": 4296, "mob": "Spider", "timestamp": 1768187609}
+{"type": "mob_retreat", "mob_id": 4296, "mob": "Spider", "timestamp": 1768187610}
+{"type": "mob_incoming", "mob": "Skeleton", "mob_id": 4840, "timestamp": 1768187610}
+{"type": "imminent_threat", "mobs": ["Skeleton"], "timestamp": 1768187610}
+{"type": "player_damage", "amount": 2.5, "cause": "arrow", "health": 3.3, "timestamp": 1768187610}
+{"type": "player_low_health", "health": 3.3, "timestamp": 1768187610}
+{"type": "mob_near", "mob": "Zombie", "mob_id": 4314, "timestamp": 1768187611}
+{"type": "mob_incoming", "mob": "Spider", "mob_id": 4296, "timestamp": 1768187611}
+{"type": "mob_near", "mob": "Skeleton", "mob_id": 4828, "timestamp": 1768187611}
+{"type": "mob_retreat", "mob_id": 4840, "mob": "Skeleton", "timestamp": 1768187611}
+{"type": "player_damage", "amount": 3.0, "cause": "arrow", "health": 0.3, "timestamp": 1768187612}
+{"type": "mob_incoming", "mob": "Spider", "mob_id": 4296, "timestamp": 1768187612}
+{"type": "mob_retreat", "mob_id": 4840, "mob": "Skeleton", "timestamp": 1768187612}
+{"type": "mob_near", "mob": "Creeper", "mob_id": 4890, "timestamp": 1768187612}
+{"type": "victim_damage", "mob_id": 4828, "mob": "Skeleton", "cause": "player", "health": 9.7, "timestamp": 1768187612}
+{"type": "player_death", "cause": "mob", "timestamp": 1768187613}

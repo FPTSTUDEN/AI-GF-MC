@@ -2,7 +2,7 @@ import requests
 from llm.prompts import SYSTEM_PROMPT
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
-MODEL = "mistral:7b-instruct"
+MODEL = "dolphin3:latest"
 
 def generate_response(prompt: str) -> str:
     payload = {
