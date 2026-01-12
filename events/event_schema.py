@@ -27,7 +27,10 @@ EVENT_SCHEMA = {
     "position": tuple | None,
 
     # terminal
-    "cause": str | None       # used for death
+    "cause": str | None,       # used for death
+
+    "sources": dict | None   # {"zombie": 2, "skeleton": 1}
+
 }
 class GameEvent:
     def __init__(self, data: dict | None = None, **kwargs):

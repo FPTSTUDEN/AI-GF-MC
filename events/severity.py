@@ -15,10 +15,11 @@ EVENT_SEVERITY = {
     "low_health": 0.8,
     "under_attack": 0.9,
     "death": 1.0,
+    "player_death": 1.0,
 
     # ----- mobs -----
     "mob_near": 0.2,
-    "mob_incoming": 0.6,
+    "mob_incoming": 0.2,
     "imminent_threat": 0.85,
     "mob_retreat": 0.2,
 

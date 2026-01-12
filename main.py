@@ -8,6 +8,21 @@ def get_severity(event_type: str) -> float:
     return EVENT_SEVERITY.get(event_type, DEFAULT_SEVERITY)
 
 STATE_FILE = "state/companion_state.json"
+def reset_state():
+    initial_state = {
+        "mood": {
+            "stress": 0.2,
+            "confidence": 0.8,
+        },
+        "stats": {
+            "recent_deaths": 0,
+            "last_comment_time": 0.0,
+            "last_comment_topic": "",
+        }
+    }
+    with open(STATE_FILE, "w") as f:
+        json.dump(initial_state, f, indent=2)
+
 def describe_event(event):
     t = event.type
 
@@ -56,7 +71,7 @@ def build_prompt(event: GameEvent, mood: dict):
         situation.append(
             f"{who} are taking damage"
             + (f" from {event.cause}" if event.cause else "")
-            + (f" ({event.intensity} hits)" if event.count else "")
+            + (f" ({event.intensity} hits)" if event.intensity else "")
         )
 
     elif event.type == "imminent_threat":
@@ -98,8 +113,9 @@ Player state:
 - Stress: {mood['stress']:.2f}
 - Confidence: {mood['confidence']:.2f}
 
-Respond in 1 - 2 short, natural sentences.
+Respond in one short, natural sentence.
 No game mechanics.
+No re-stating the situation.
 """.strip()
 # short sentences modification
 # Removed: Stay in character. 
@@ -120,7 +136,7 @@ def handle_event(event: GameEvent):
         return
     # ----------------
 
-    if not should_comment(state):
+    if not should_comment(state, event):
         save_state(state)
         return
 
@@ -131,13 +147,14 @@ def handle_event(event: GameEvent):
     responses.append(response)
 
     # print("AI:", response)
-    print(prompt)
+    print(event.type, "| Severity:", severity)
 
     save_state(state)
 
 
 # ---- TEST ----
 if __name__ == "__main__":
+    reset_state()
     global responses
     responses=[]
     # test_event = GameEvent(type="death", cause="creeper")

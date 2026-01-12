@@ -1,0 +1,15 @@
+{
+  "mood": {
+    "stress": 0.2,
+    "excitement": 0.4,
+    "confidence": 0.5
+  },
+  "opinions": {
+    "lava": "terrifying"
+  },
+  "stats": {
+    "recent_deaths": 2,
+    "last_comment_topic": "",
+    "last_comment_time": 1768204542.9331284
+  }
+}
