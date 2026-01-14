@@ -24,7 +24,12 @@ import threading
 # t1=threading.Thread(target=subprocess.run([sys.executable, "birec.py"], check=True))
 # t1.start()
 # chat("birec.py executing")
-
+print(next((i for i in get_entities() if i.name=="123"),"ERROR"))
+for e in get_entities():
+    if e.type=="entity.minecraft.armor_stand" and e.name=="123":
+        euuid=e.uuid
+        # print(e)
+print(next((i for i in get_entities() if i.uuid==euuid),"ERROR").nbt)
 # ---------------- event callbacks ----------------
 
 def on_chat(event):
@@ -70,6 +75,9 @@ with EventQueue() as eq:
         if event.type == EventType.DAMAGE:
             on_damage(event)
             echo(event)
+        if event.type == EventType.CHAT:
+            if event.message == "--get":
+                pass
         # if event.type == EventType.CHAT:
         #     msg = event.message
         #     if msg =="Damage event detected":

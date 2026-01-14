@@ -5,14 +5,14 @@ from pathlib import Path
 LOG_FILE = Path("events.log")
 
 # ---------- config ----------
-UNDER_ATTACK_WINDOW = 2.0
+UNDER_ATTACK_WINDOW = 4.0
 UNDER_ATTACK_HITS = 3
-IMMINENT_THREAT_WINDOW = 3.0
+IMMINENT_THREAT_WINDOW = 4.0
 
 RATE_LIMITS = {
     "low_health": 5,
-    "imminent_threat": 5,
-    "under_attack": 5
+    "imminent_threat": 4,
+    "under_attack": 3
 }
 # ----------------------------
 

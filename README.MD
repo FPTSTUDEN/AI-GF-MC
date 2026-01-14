@@ -3,11 +3,11 @@
 - BOOM
 # Example
 - imminent_threat | Severity: 0.85 ->
-Relax, you've got this! Just a little more precision and those mobs will be history.
+**Relax, you've got this!** Just a little more precision and those mobs will be history.
 - under_attack | Severity: 0.9 ->
-Nice going there, Caspar the friendly zombie's new best friend!
+Nice going there, **Caspar the friendly zombie**'s new best friend!
 - player_death | Severity: 1.0 ->
-Well, that's one way to become a zombie's favorite snack. Better luck next time!
+Well, **that's one way to become a zombie's favorite snack**. Better luck next time!
 
 # Credits
 <!-- [![aigf](https://github.com/FPTSTUDEN/AI-GF-MC/blob/78e6beb2dfb16c07e8d1db7fc97faa9ffa485453/misc/ai_catsdontlikecoffee.png){:width=200px}](https://www.instagram.com/catsdontlikecoffee/) -->
@@ -25,7 +25,7 @@ also the videos are insane and i like it
 ### sam-ple
 their repo helped me a lot with:
 - latest version's syntax
-- biolog (a modified version of their biomerecorder)
+- biotrack (inspired by their biomerecorder)
 ### Other AIs
 - chatgpt, gemini, github copilot... for refining my code and saving my time
 
@@ -33,7 +33,7 @@ their repo helped me a lot with:
 
 # Stable files
 - **remote_minescript/elog.py** - event logger to /.minecraft/events.txt
-- **remote_minescript/biolog.py** - biome & time on biome logger 
+- **remote_minescript/biotrack.py** - biome & time on biome logger 
 - **main.py** - THE AI: one-time parses events.log for now
 
 # Prerequisites

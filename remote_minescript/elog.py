@@ -46,10 +46,45 @@ def format_position(pos):
     return f"({pos[0]:.1f}, {pos[1]:.1f}, {pos[2]:.1f})"
 
 #----------------on_events-----------------
+class CombatAggregate:
+    def __init__(self):
+        self.sources = {}      # source -> hit count
+        self.total_hits = 0
+        self.last_health = None
+        self.severity = 0.0
+
+    def add(self, event):
+        src = event.source or "unknown"
+        self.sources[src] = self.sources.get(src, 0) + 1
+        self.total_hits += 1
+        self.last_health = event.health
+        self.severity = max(self.severity, event.severity)
+
+def aggregate_events(events):
+    combat = CombatAggregate()
+
+    for e in events:
+        if e.type == "under_attack":
+            combat.add(e)
+
+    if combat.total_hits == 0:
+        return None
+
+    return {
+        "type": "under_attack",
+        "severity": combat.severity,
+        "target": "player",
+        "sources": combat.sources,
+        "count": combat.total_hits,
+        "health": combat.last_health
+    }
+
+
 def on_player_damage(amount, cause, health):
     t = now()
-    player_damage_times.append(t)
-    player_damage_times[:] = [x for x in player_damage_times if t - x <= UNDER_ATTACK_WINDOW]
+    player_damage_times.append([t,cause])
+    player_damage_times[:] = [x for x in player_damage_times if t - x[0] <= UNDER_ATTACK_WINDOW] # keep only recent hits
+
 
     # raw event
     if health > 0:
@@ -72,7 +107,8 @@ def on_player_damage(amount, cause, health):
                 "type": "under_attack",
                 "target": "player",
                 "intensity": len(player_damage_times),
-                "cause": str(cause)
+                "cause": ", ".join(set([x[1] for x in player_damage_times])),
+                "health": round(health, 1)
             })
         player_damage_times.clear()
 
@@ -181,6 +217,13 @@ def main():
         if damage_event.entity_uuid==player.uuid:
             damage = last_health - player.health
             source=damage_event.source
+            if source=="mob":
+                source_uuid=damage_event.cause_uuid
+                for entity in get_entities():
+                    if entity.uuid==source_uuid:
+                        source=entity.name
+                        break
+            chat(damage_event)
             log(f"Player took damage ({damage:.1f} HP) by {source} current health {player.health:.1f}")
             on_player_damage(damage,source,player.health)
         elif damage_event.cause_uuid==player.uuid:
