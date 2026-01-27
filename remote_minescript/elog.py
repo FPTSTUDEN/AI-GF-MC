@@ -1,4 +1,5 @@
 from minescript import *
+#comment
 import time
 import math
 import threading

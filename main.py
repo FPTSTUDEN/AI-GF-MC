@@ -5,6 +5,9 @@ from events.event_schema import GameEvent
 from events.severity import EVENT_SEVERITY, DEFAULT_SEVERITY
 from events.event_reader import replay_events, replay_single_event
 import time
+from dotenv import load_dotenv
+import os
+load_dotenv()
 def get_severity(event_type: str) -> float:
     return EVENT_SEVERITY.get(event_type, DEFAULT_SEVERITY)
 
@@ -154,7 +157,7 @@ def handle_event(event: GameEvent):
 
 
 # ---- TEST ----
-MINESCRIPT__PATH="C:\\Users\\LOQ\\Documents\\webdev\\AI GF MC\\minescript\\"
+MINESCRIPT__PATH=os.getenv("MINESCRIPT_PATH")
 SINGLE_EVENT_LOG_FILE=MINESCRIPT__PATH+"single_event.log"
 RESPONSE_LOG_FILE=MINESCRIPT__PATH+"response_log.txt"
 if __name__ == "__main__":

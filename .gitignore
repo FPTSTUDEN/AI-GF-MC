@@ -12,3 +12,5 @@ config.txt
 
 *.pyc
 remote_minescript/system/lib/__pycache__/
+
+.env
