@@ -297,7 +297,8 @@ def periodic_danger_check():
 def damage_check():
     main()
 
-
+RESPONSE_FILE = "response_log.txt"
+last_response=""
 with EventQueue() as eq:
     eq.register_damage_listener()
     eq.register_chat_listener()
@@ -313,6 +314,15 @@ with EventQueue() as eq:
         if event.type == EventType.DAMAGE:
             damage_event=event
             damage_check()
+        try:
+            with open(RESPONSE_FILE, "r", encoding="utf-8") as rf:
+                response_data = rf.read()
+                if response_data != last_response:
+                    last_response = response_data
+                    echo("New response generated:")
+                    echo(last_response)
+        except FileNotFoundError:
+            pass
         # if event.type == EventType.CHAT:
         #     msg = event.message
         #     if msg =="Damage event detected":

@@ -1,11 +1,11 @@
 {
   "mood": {
-    "stress": 0.25,
-    "confidence": 0.8
+    "stress": 1.0,
+    "confidence": 0.0
   },
   "stats": {
-    "recent_deaths": 1,
-    "last_comment_time": 1768208500.9280427,
+    "recent_deaths": 2,
+    "last_comment_time": 1769501267.9074845,
     "last_comment_topic": ""
   }
 }

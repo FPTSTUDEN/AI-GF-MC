@@ -3,8 +3,7 @@ from llm.client import generate_response
 from emotion.engine import update_state, decide_intent, should_comment
 from events.event_schema import GameEvent
 from events.severity import EVENT_SEVERITY, DEFAULT_SEVERITY
-from events.event_reader import replay_events, replay_single_event
-import time
+from events.event_reader import replay_events
 def get_severity(event_type: str) -> float:
     return EVENT_SEVERITY.get(event_type, DEFAULT_SEVERITY)
 
@@ -148,39 +147,22 @@ def handle_event(event: GameEvent):
     responses.append(response)
 
     # print("AI:", response)
-    # print(event.type, "| Severity:", severity, "| Timestamp:", event.timestamp)
+    print(event.type, "| Severity:", severity)
 
     save_state(state)
 
 
 # ---- TEST ----
-MINESCRIPT__PATH="C:\\Users\\LOQ\\Documents\\webdev\\AI GF MC\\minescript\\"
-SINGLE_EVENT_LOG_FILE=MINESCRIPT__PATH+"single_event.log"
-RESPONSE_LOG_FILE=MINESCRIPT__PATH+"response_log.txt"
 if __name__ == "__main__":
-    with open(SINGLE_EVENT_LOG_FILE, "w", encoding="utf-8") as f:
-        f.write("")
     reset_state()
     global responses
     responses=[]
-    last_event_data = GameEvent(type="none", timestamp=0)
-    last_response_time = 0
-    print("Starting event monitoring loop...")
-    while True:
-        with open(SINGLE_EVENT_LOG_FILE, "r", encoding="utf-8") as f:
-            for event in replay_single_event(SINGLE_EVENT_LOG_FILE):
-                if event.timestamp>last_event_data.timestamp:
-                    # print(event.timestamp,last_event_data.timestamp)
-                    handle_event(event)
-                    last_event_data = event
-                    for res in responses:
-                        print("New response:", res)
-                        with open(RESPONSE_LOG_FILE, "w", encoding="utf-8") as rf:
-                            rf.write(res + "\n")
-                        time.sleep(0.1)  # slight delay to ensure file write
-                    responses = []
-
-            
+    # test_event = GameEvent(type="death", cause="creeper")
+    # handle_event(test_event)
+    for event in replay_events("events.log"):
+        handle_event(event)
+    for res in responses:
+        print(res)
 
 
 '''

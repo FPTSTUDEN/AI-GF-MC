@@ -3,7 +3,8 @@ import time
 from pathlib import Path
 
 LOG_FILE = Path("events.log")
-
+#./minescript/single_event.log
+SINGLE_EVENT_LOG_FILE = Path("minescript/single_event.log")
 # ---------- config ----------
 UNDER_ATTACK_WINDOW = 4.0
 UNDER_ATTACK_HITS = 3
@@ -39,4 +40,6 @@ def write_event(event: dict):
     event["timestamp"] = int(time.time())
 
     with LOG_FILE.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(event, ensure_ascii=False) + "\n")
+    with SINGLE_EVENT_LOG_FILE.open("w", encoding="utf-8") as f:
         f.write(json.dumps(event, ensure_ascii=False) + "\n")

@@ -1,6 +1,6 @@
 import time
 
-COOLDOWN_SECONDS = 3
+COOLDOWN_SECONDS = 5
 hostile_mob_types = {"Zombie", "Skeleton", "Creeper", "Spider", "Enderman"}
 
 def update_state(state: dict, event) -> None:
