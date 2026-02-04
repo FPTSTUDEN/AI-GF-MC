@@ -11,6 +11,13 @@ load_dotenv()
 def get_severity(event_type: str) -> float:
     return EVENT_SEVERITY.get(event_type, DEFAULT_SEVERITY)
 
+# PERSONALITY = {
+#     "talkativeness": 0.35,   # lower = more silence
+#     "sarcasm": 0.4,
+#     "empathy": 0.6,
+#     "urgency_bias": 0.5
+# }
+
 STATE_FILE = "state/companion_state.json"
 def reset_state():
     initial_state = {
