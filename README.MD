@@ -1,16 +1,22 @@
-# AI GF MC
+# Scarlet
 
-- minecraft python script extracts game data -> local llm (maybe -> tts in the future)
-- BOOM
+An AI companion that watches a Minecraft session in real time, understands what's happening (combat, danger, death, biomes), *and reacts live inside the game using in-game chat* (in progress).
 
-## Example
+## Features
 
-- imminent_threat | Severity: 0.85 ->
-**Relax, you've got this!** Just a little more precision and those mobs will be history.
-- under_attack | Severity: 0.9 ->
-Nice going there, **Caspar the friendly zombie**'s new best friend!
-- player_death | Severity: 1.0 ->
-Well, **that's one way to become a zombie's favorite snack**. Better luck next time!
+- Observes live gameplay events via MineScript
+- Aggregates raw events into situations (since I dont have a data center to process every event lol)
+- Uses a local LLM to generate short, emotional reactions
+- *Speaks directly in Minecraft chat* (in progress)
+- Adapts tone based on danger, stress, and context (pending improvements)
+
+## Examples
+
+```
+- Relax, you've got this! Just a little more precision and those mobs will be history. (imminent_threat)
+- Nice going there, Caspar the friendly zombie's new best friend! (under_attack)
+- Well, that's one way to become a zombie's favorite snack. Better luck next time! (player_death)
+```
 
 ## Credits
 
@@ -46,11 +52,11 @@ their repo helped me a lot with:
 - **remote_minescript/biotrack.py** - biome & time on biome logger
 - **main.py** - THE AI: one-time parses events.log for now
 
-## Prerequisites
+## Tech stack
 
 - **Minecraft** with **Minescript** mod
+- **Python** for prompting-related functions
 - **Ollama**: dolphin3:latest
-- Any mod with **chat hiding** functionality (to not expose your spammy logging chat)
 
 ## TODO
 
@@ -58,18 +64,18 @@ their repo helped me a lot with:
 
 (...: in progress, V: Done, X: Failed attempt)
 
-- **under_attack aggregator** not working ...
-- **damaged** (cause: lava,monster...) V
-- **attacked entity** V
+- [x] **under_attack aggregator**
+- [x] **damaged** (cause: lava,monster...)
+- [x] **attacked entity**
 - death ... (0 HP detection possible)
-- **low_health**  V
-- **monster_near** V
-- achievement
-- enter_dimension (X) / **biome** V
+- [x] **low_health** 
+- [x] **monster_near**
+- [ ] achievement
+- [x] enter_dimension/ **biome**
 - ~~lava_near~~ (no need)
 
-- Player action (long duration): mining, farming,...
-- Inventory: collective, should be new items only
+- [] Player action (long duration): mining, farming,...
+- [] Inventory: collective, should be new items only
 
 ### Log parser -> comment
 
