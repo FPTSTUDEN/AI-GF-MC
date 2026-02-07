@@ -69,6 +69,7 @@ def save_state(state):
         json.dump(state, f, indent=2)
 
 def build_prompt(event: GameEvent, mood: dict):
+    print(event.type,event.severity)
     urgency = (
         "critical" if event.severity >= 0.85 else
         "high" if event.severity >= 0.5 else #0.6 -> 0.5
@@ -114,7 +115,6 @@ def build_prompt(event: GameEvent, mood: dict):
         situation.append(str(event.type))
 
     return f"""
-You are an AI companion observing a Minecraft session.
 
 Situation:
 - {'; '.join(situation)}
@@ -124,9 +124,7 @@ Player state:
 - Stress: {mood['stress']:.2f}
 - Confidence: {mood['confidence']:.2f}
 
-Respond in one short, natural sentence.
-No game mechanics.
-No re-stating the situation.
+
 """.strip()
 # short sentences modification
 # Removed: Stay in character. 

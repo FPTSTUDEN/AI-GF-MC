@@ -1,4 +1,13 @@
-# Scarlet
+<!-- ![banner](./.misc/crimson%20banner%20-%20ChatGPT.png) -->
+<h1 align="center">
+    <img src="./.misc/crimson banner - ChatGPT2.png" width="100%"/>
+    <br>
+    <!-- Scarlet King -->
+    <!-- <br> -->
+</h1>
+
+<!-- # Scarlet -->
+> **[InLava]** Well, that was hot. Not literally, I hope?
 
 An AI companion that watches a Minecraft session in real time, understands what's happening (combat, danger, death, biomes), *and reacts live inside the game using in-game chat* (in progress).
 

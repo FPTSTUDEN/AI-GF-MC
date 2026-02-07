@@ -274,10 +274,11 @@ def periodic_danger_check():
                 last_danger=last_seen_dangers[[a.id for a in last_seen_dangers].index(e.id)]
                 proxity_before = distance(last_pos, last_danger.position)
                 proxity_now = distance(player.position, e.position)
-                if proxity_now>15: #view
+                if proxity_now>8: #view
                     last_seen_dangers.remove(last_seen_dangers[[a.id for a in last_seen_dangers].index(e.id)])
                     continue
-                # if abs(proxity_now-proxity_before)>1.5:
+                if abs(proxity_now-proxity_before)<2:
+                    continue
                 if proxity_now < proxity_before:
                     log(f"Incoming #{e.id} {e.name}!")
                     on_mob_incoming(e)

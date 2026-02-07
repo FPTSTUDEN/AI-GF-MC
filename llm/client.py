@@ -2,16 +2,17 @@ import requests
 from llm.prompts import SYSTEM_PROMPT
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
-MODEL = "dolphin3:latest"
+# MODEL = "dolphin3:latest"
+MODEL = "mymodel:latest"
 
 def generate_response(prompt: str) -> str:
     payload = {
         "model": MODEL,
-        "system": SYSTEM_PROMPT,
+        # "system": SYSTEM_PROMPT,
         "prompt": prompt,
         "stream": False,
         "options": {
-            "temperature": 0.5,
+            # "temperature": 0.5,
             "top_p": 0.9,
             "repeat_penalty": 1.1,
             "num_predict": 80
@@ -22,3 +23,5 @@ def generate_response(prompt: str) -> str:
     r.raise_for_status()
 
     return r.json()["response"].strip()
+
+
